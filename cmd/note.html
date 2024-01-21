@@ -1,18 +1,44 @@
 {{define "Note"}}
 {{range $i, $note := .Notes}}
-<div class="carousel-item{{if eq $i 0}} active{{end}}">
-    <div class="note-container">
+<div class="carousel-item{{if eq $i 0}} active{{end}} ">
+    <div class="note-container text-center mx-auto">
         <div class="note-id">{{.Id}}</div>
-<!--        FIX ME user ID-->
         <div class="note-title">{{.Title}}</div>
         <div class="note-text">{{.Text}}</div>
         <div class="note-date">Дата создания: {{.Date}}</div>
-        <div class="note-text">{{.Done}}</div>
+
+        <!-- Ползунок переключателя (toggle switch) -->
+        <div class="d-flex flex-column justify-content-center align-items-center form-check form-switch">
+
+            <label data-done="{{.Done}}" id="{{$i}}" for="toggleSwitch{{$i}}">Выполнено</label>
+            <input class="form-check-input" type="checkbox" id="toggleSwitch{{$i}}">
+
+        </div>
+
+
     </div>
 </div>
-<div class="form-check form-switch">
-    <input class="form-check-input" type="checkbox" id="toggleSwitch">
-    <label class="form-check-label" for="toggleSwitch">Toggle Switch</label>
-</div>
+
+<script>
+    // Обработчик события изменения состояния переключателя
+    document.addEventListener("DOMContentLoaded", function() {
+        let notesDone = document.querySelectorAll('[data-done]')
+        notesDone.forEach(function(n){
+            if (n.dataset.done === false) {
+
+            } else {
+                n.style.display = this.checked ? "block" : "none";
+            }
+        })
+
+    })
+    document.getElementById("toggleSwitch{{$i}}").addEventListener("change", function() {
+        // Получаем элемент с надписью "Выполнено"
+        let doneLabel = document.getElementById("{{$i}}");
+
+        // Переключаем видимость надписи в зависимости от состояния переключателя
+        doneLabel.style.display = this.checked ? "block" : "none";
+    });
+</script>
 {{end}}
 {{end}}
