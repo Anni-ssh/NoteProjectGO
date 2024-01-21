@@ -1,0 +1,18 @@
+{{define "Note"}}
+{{range $i, $note := .Notes}}
+<div class="carousel-item{{if eq $i 0}} active{{end}}">
+    <div class="note-container">
+        <div class="note-id">{{.Id}}</div>
+<!--        FIX ME user ID-->
+        <div class="note-title">{{.Title}}</div>
+        <div class="note-text">{{.Text}}</div>
+        <div class="note-date">Дата создания: {{.Date}}</div>
+        <div class="note-text">{{.Done}}</div>
+    </div>
+</div>
+<div class="form-check form-switch">
+    <input class="form-check-input" type="checkbox" id="toggleSwitch">
+    <label class="form-check-label" for="toggleSwitch">Toggle Switch</label>
+</div>
+{{end}}
+{{end}}

@@ -58,11 +58,34 @@ type Note struct {
 	IdUser int    `json:"id_user" env-required:"true"`
 	Title  string `json:"title" env-required:"true"`
 	Text   string `json:"text" env-required:"true"`
+	Date   string `json:"date" env-required:"true"`
 	Done   bool   `json:"done" env-required:"true"`
 }
 
 // МЕТОДЫ NOTE
 // NoteInfo структурированный вывод данных о заметке.
 func (n Note) NoteInfo() string {
-	return fmt.Sprintf("Id:%d\nIdUser:%d\nTitle:%s\nText:%s\nDone:%t\n", n.Id, n.IdUser, n.Title, n.Text, n.Done)
+	return fmt.Sprintf("Id:%d\nIdUser:%d\nTitle:%s\nText:%s\nDate:%s\nDone:%t\n", n.Id, n.IdUser, n.Title, n.Text, n.Date, n.Done)
 }
+
+type UsersList struct {
+	Users []User
+}
+type NotesList struct {
+	Notes []Note
+}
+
+//
+//func (n *NotesList) BeautifulTime() {
+//	const operation = "dataBaseSQL.BeautifulTime"
+//	for _, v := range n.Notes {
+//		strDate := v.Date.Format("02.01.2006 15:04:05")
+//		a, err := time.Parse()
+//		if err != nil {
+//			fmt.Println(err)
+//		}
+//		fmt.Println(a)
+//
+//	}
+//
+//}

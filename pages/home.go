@@ -1,16 +1,29 @@
 package pages
 
 import (
+	"TestProject/config"
+	"TestProject/internal/helperFunc"
 	"TestProject/internal/lib/session"
+	"context"
+	"database/sql"
 	"errors"
 	"fmt"
 	"html/template"
+	"log/slog"
 	"net/http"
 )
 
-// Главная страница
-func Home(w http.ResponseWriter, r *http.Request) {
+type Application struct {
+	DB     *sql.DB
+	Err    error
+	Slog   *slog.Logger
+	Ctx    context.Context
+	Config *config.StartupConfig
+}
 
+func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
+
+	//FIX ME ДОДЕЛАТЬ СЕССИИ
 	//Проверка наличия куки в запросе
 	_, err := r.Cookie("NotesX")
 
@@ -18,10 +31,11 @@ func Home(w http.ResponseWriter, r *http.Request) {
 	if errors.Is(err, http.ErrNoCookie) {
 		cookie := http.Cookie{}
 
+		//Создание токена
 		err = session.SetSession("NotesX", 16, 24, &cookie)
 
 		if err != nil {
-			http.Error(w, "Internal Server Error", http.StatusInternalServerError)
+			app.ServerError(w, err)
 			return
 		}
 		http.SetCookie(w, &cookie)
@@ -29,25 +43,37 @@ func Home(w http.ResponseWriter, r *http.Request) {
 
 	//Проверка наличия страницы на сайте
 	if r.URL.Path != "/" {
-		http.NotFound(w, r)
+		app.NotFound(w)
 		return
 	}
 
-	path := []string{"Home.html"}
+	path := []string{"home.html", "header.html", "note.html"}
 
 	t, err := template.ParseFiles(path...)
 
+	//FIX ME
 	if err != nil {
 		fmt.Println("Ошибка отправки HTML")
-		panic(err)
+		if err != nil {
+			//FIX
+			app.ServerError(w, err)
+			return
+		}
 	}
 
-	//Variables := serverTypes.PageVariables{Title: "Notes", Hour: time.Now().Hour()}
-	err = t.Execute(w, "HomePage")
-
+	notesList, err := helperFunc.СonvExtractedNotesData(app.DB, app.Ctx)
+	//FIX ME
 	if err != nil {
-		fmt.Println("Ошибка исполнения HTML")
-		panic(err)
+		app.Slog.Error("Ошибка запроса БД")
+		app.ServerError(w, err)
+		return
+	}
+
+	err = t.Execute(w, notesList)
+	if err != nil {
+		app.Slog.Error("Ошибка исполнения HTML")
+		app.ServerError(w, err)
+		return
 	}
 
 }

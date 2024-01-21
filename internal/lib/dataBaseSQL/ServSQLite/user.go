@@ -1,8 +1,8 @@
-package SQLite
+package ServSQLite
 
 import (
-	"Test/dataBaseSQL"
-	"Test/dataBaseSQL/errSql"
+	"TestProject/internal/lib/dataBaseSQL"
+	"TestProject/internal/lib/dataBaseSQL/errSql"
 	"context"
 	"database/sql"
 	"errors"
