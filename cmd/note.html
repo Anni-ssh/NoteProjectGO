@@ -10,8 +10,8 @@
         <!-- Ползунок переключателя (toggle switch) -->
         <div class="d-flex flex-column justify-content-center align-items-center form-check form-switch">
 
-            <label data-done="{{.Done}}" id="{{$i}}" for="toggleSwitch{{$i}}">Выполнено</label>
-            <input class="form-check-input" type="checkbox" id="toggleSwitch{{$i}}">
+            <label id="{{$i}}" for="toggleSwitch{{$i}}">Выполнено</label>
+            <input data-done="{{.Done}}" class="form-check-input" type="checkbox" id="toggleSwitch{{$i}}">
 
         </div>
 
@@ -22,23 +22,22 @@
 <script>
     // Обработчик события изменения состояния переключателя
     document.addEventListener("DOMContentLoaded", function() {
-        let notesDone = document.querySelectorAll('[data-done]')
-        notesDone.forEach(function(n){
-            if (n.dataset.done === false) {
+        let notesDone = document.getElementById("toggleSwitch{{$i}}")
+        let doneLabel = document.getElementById("{{$i}}");
 
-            } else {
-                n.style.display = this.checked ? "block" : "none";
-            }
-        })
-
+        if (notesDone.dataset.done === "false") {
+            notesDone.checked = false
+            doneLabel.style.display = "none";
+        } else notesDone.checked = true;
     })
+
     document.getElementById("toggleSwitch{{$i}}").addEventListener("change", function() {
         // Получаем элемент с надписью "Выполнено"
         let doneLabel = document.getElementById("{{$i}}");
-
-        // Переключаем видимость надписи в зависимости от состояния переключателя
+        // Отображение меняется в зависимости от состояния переключателя
         doneLabel.style.display = this.checked ? "block" : "none";
     });
 </script>
+
 {{end}}
 {{end}}
