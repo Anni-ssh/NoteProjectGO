@@ -1,5 +1,5 @@
 {
   "env": "local",
-  "dataBasePath": "storage.db"
+  "dataBasePath": "./storage/storage.db",
+  "pagesPath": "./web/templates/"
 }
-

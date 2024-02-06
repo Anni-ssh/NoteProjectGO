@@ -5,12 +5,7 @@ import (
 	"TestProject/internal/lib/dataBaseSQL/ServSQLite"
 	"context"
 	"database/sql"
-	"errors"
 	"fmt"
-)
-
-var (
-	ErrDataNil = errors.New("data not found")
 )
 
 // FIX ME name ctx
@@ -47,6 +42,7 @@ func SendNoteToDB(DB *sql.DB, ctx context.Context, notesList ...dataBaseSQL.Note
 	return nil
 }
 
+// ConvStrInNote преобразует данные в структуру note.
 func ConvStrInNote(title, text string) dataBaseSQL.Note {
 	newNote := dataBaseSQL.Note{
 		Title: title,

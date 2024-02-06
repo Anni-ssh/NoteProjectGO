@@ -1,11 +1,11 @@
 package main
 
 import (
+	"TestProject/cmd/pages"
 	"TestProject/internal/config"
 	"TestProject/internal/lib/dataBaseSQL"
 	"TestProject/internal/lib/dataBaseSQL/ServSQLite"
 	"TestProject/internal/lib/logger"
-	"TestProject/web/pages"
 	"context"
 	"flag"
 	"fmt"
@@ -51,27 +51,35 @@ func HandleRequest(app pages.Application) {
 
 func main() {
 	//Создание конфига
-	//Panic дальнейшая работа программы без данных компонентов невозможна
-	cfg, err := config.CreateCfg("config.json")
+	// Получение значения переменной окружения CONFIG_PATH
+	configPath := os.Getenv("CONFIG_PATH")
+	fmt.Println(configPath)
+	// Если нет значения, то выставляем дефолтное
+	if configPath == "" {
+		configPath = "./config/config.json"
+	}
+
+	//Panic, запуск без конфига невозможен
+	cfg, err := config.CreateCfg(configPath)
 	if err != nil {
 		fmt.Println(err)
 		panic(err)
 	}
 
-	//Создание логера
+	////Создание логов
 	slog := logger.SetupLogger(cfg.Env)
 
-	//Создание пула соединений в БД
+	////Создание пула соединений в БД
 	db, err := dataBaseSQL.OpenDB(cfg.DataBasePath)
 	if err != nil {
 		slog.Error("Ошибка открытия соединения с БД")
 		panic(err)
 	}
 
-	//FIX ME Создание контекста
+	////FIX ME Создание контекста
 	Ctx := context.Background()
 
-	//Создание необходимых таблиц
+	////Создание необходимых таблиц
 	err = ServSQLite.DataBaseSQLiteNote{Storage: db}.CreateNotesTable(Ctx)
 	if err != nil {
 		slog.Error("Err Open Data base")
@@ -94,6 +102,10 @@ func main() {
 	select {
 	case sig := <-sigChan:
 		slog.Info("Stopped by Admin", "Signal", sig)
+		err = app.DB.Close()
+		if err == nil {
+			fmt.Println("Ошибка закрытия пула соединений с базой данных при закрытии программы")
+		}
 		return
 	}
 

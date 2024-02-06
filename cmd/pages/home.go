@@ -7,7 +7,6 @@ import (
 	"context"
 	"database/sql"
 	"errors"
-	"fmt"
 	"html/template"
 	"log/slog"
 	"net/http"
@@ -46,23 +45,22 @@ func (app *Application) Home(w http.ResponseWriter, r *http.Request) {
 		app.NotFound(w)
 		return
 	}
+	//т.к. всё парсится первым нужно обязательно home
+	paths := []string{"./web/templates/home.html", "./web/templates/note.html", "./web/templates/header.html"}
 
-	path := []string{"home.html", "header.html", "note.html"}
-
-	t, err := template.ParseFiles(path...)
+	t, err := template.ParseFiles(paths...)
 
 	//FIX ME
 	if err != nil {
-		fmt.Println("Ошибка отправки HTML")
 		if err != nil {
-			//FIX
+			app.Slog.Error("Ошибка отправки HTML")
 			app.ServerError(w, err)
 			return
 		}
 	}
 
 	notesList, err := helperFunc.СonvExtractedNotesData(app.DB, app.Ctx)
-	//FIX ME
+
 	if err != nil {
 		app.Slog.Error("Ошибка запроса БД")
 		app.ServerError(w, err)
