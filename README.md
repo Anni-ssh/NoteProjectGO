@@ -23,7 +23,6 @@
 
 - storage/
 - web/
-- 
 - .gitignore
 - go.mod
 - README.md
