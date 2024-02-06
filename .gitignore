@@ -1,1 +1,5 @@
 /storage/storage.db
+/storage/.gitkeep
+/pkg/.gitkeep
+/scripts/.gitkeep
+/tests/.gitkeep
