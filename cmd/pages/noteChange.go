@@ -7,7 +7,7 @@ import (
 )
 
 // SaveNote страничка сохранения заметки.
-func (app *Application) SaveNote(w http.ResponseWriter, r *http.Request) {
+func (app *Application) ChangeNote(w http.ResponseWriter, r *http.Request) {
 	//Проверяем метод
 	if r.Method != http.MethodPost {
 		// Вызываем метод w.WriteHeader() для возвращения статус-кода 405

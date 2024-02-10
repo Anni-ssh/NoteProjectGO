@@ -37,6 +37,35 @@
         // Отображение меняется в зависимости от состояния переключателя
         doneLabel.style.display = this.checked ? "block" : "none";
     });
+
+
+    function sendAjaxRequest() {
+
+        fetch("/note/save", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json"
+            },
+            body: JSON.stringify({ "Title": noteTitle, "Text": noteText })
+        })
+            // Получение ответа и проверка.
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Ошибка получения Json от сервера');
+                }
+                return response.json();
+            })
+            // Обработка полученных данных
+            .then(data => {
+                alert(data.message);
+            })
+            // Проверка на ошибки
+            .catch(error => {
+                // Обработка ошибок
+                console.error("Error:", error);
+                alert("Error: " + error.message);
+            });
+    }
 </script>
 
 {{end}}
