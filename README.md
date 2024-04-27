@@ -12,7 +12,7 @@
 - internal/
     - config/
         - config.go
-    -entities/
+    - entities/
         - note.go
         - user.go
     - service/
@@ -23,10 +23,10 @@
           - authorization.go
           - error.go
           - postgres.go
-        -redis/
-        -storage.go
+        - redis/
+        - storage.go
     - transport/
-        -http-server/
+        - http-server/
           - handler/
               createNote.go
               deleteNote.go
