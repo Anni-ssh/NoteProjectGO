@@ -1,0 +1,7 @@
+env: local
+server: "localhost:8080"
+db:
+  Host: localhost
+  Port: "5432"
+  DBName: NoteProject
+  SSLMode: disable
