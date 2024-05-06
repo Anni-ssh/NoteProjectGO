@@ -5,3 +5,7 @@ db:
   Port: "5432"
   DBName: NoteProject
   SSLMode: disable
+redis:
+  Addr:     "localhost:6379"
+  Password: "1234"
+  DB:       0

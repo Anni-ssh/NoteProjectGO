@@ -1,10 +1,11 @@
 {{define "Note"}}
-{{range $i, $note := .Notes}}
+{{range $i, $note := .}}
 <div class="carousel-item{{if eq $i 0}} active{{end}} ">
     <div class="note-container text-center mx-auto">
         <div class="note-id">{{.Id}}</div>
         <div class="note-title">{{.Title}}</div>
         <div class="note-text">{{.Text}}</div>
+        <div class="note-user-id">{{.UserId}}</div>
         <div class="note-date">Дата создания: {{.Date}}</div>
 
         <!-- Ползунок переключателя (toggle switch) -->
@@ -18,7 +19,6 @@
 
     </div>
 </div>
-
 <script>
     // Обработчик события изменения состояния переключателя
     document.addEventListener("DOMContentLoaded", function() {

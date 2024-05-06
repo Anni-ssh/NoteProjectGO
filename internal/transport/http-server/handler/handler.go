@@ -6,6 +6,14 @@ import (
 	"github.com/go-chi/chi/v5/middleware"
 	"log/slog"
 	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+)
+
+const (
+	webPath    = "web"
+	staticPath = "static"
 )
 
 type Handler struct {
@@ -20,34 +28,55 @@ func (h *Handler) InitLogger(l *slog.Logger) {
 	h.Logs = l
 }
 func (h *Handler) InitRouter() *chi.Mux {
-	router := chi.NewRouter()
-	router.Use(middleware.Recoverer)
-
+	r := chi.NewRouter()
+	r.Use(middleware.Recoverer) //recovery из panic
+	r.Use(middleware.CleanPath) //исправление путей
 	//TO DO
 	//router.Use(logger.New(log))
-	router.Get("/", h.home)
 
-	//TO DO
-	//Static file
-	router.Route("/static", func(r chi.Router) {
-		r.Get("/", h.static)
-	})
+	r.Get("/", h.home)
 
-	fs := http.FileServer(http.Dir("./web"))
-	router.Handle("/web/*", http.StripPrefix("/web/", fs))
+	//Static files
+	fileServer(r, "/")
 
 	// Аутентификация
-	router.Route("/auth", func(r chi.Router) {
+	r.Route("/auth", func(r chi.Router) {
 		r.Post("/sign-up", h.signUp)
 		r.Post("/sign-in", h.signIn)
 	})
-	router.Route("/note", func(r chi.Router) {
+	// Работа с заметками
+	r.Route("/note", func(r chi.Router) {
 		r.Use(h.authMiddleware)
-		r.Get("/read", h.readNote)
+
+		r.Get("/workspace", h.noteWorkspace)
 		r.Post("/create", h.createNote)
-		r.Post("/update", h.updateNote)
-		r.Post("/delete", h.deleteNote)
+		r.Put("/update", h.updateNote)
+		r.Delete("/delete", h.deleteNote)
 	})
 
-	return router
+	r.Get("/session", h.Session)
+	return r
+}
+
+func fileServer(r chi.Router, path string) {
+	workDir, _ := os.Getwd()
+	root := http.Dir(filepath.Join(workDir, webPath, staticPath))
+
+	if strings.ContainsAny(path, "{}*") {
+		//TODO
+		panic("FileServer does not permit any URL parameters.")
+	}
+
+	if path != "/" && path[len(path)-1] != '/' {
+		r.Get(path, http.RedirectHandler(path+"/", 301).ServeHTTP)
+		path += "/"
+	}
+	path += "*"
+
+	r.Get(path, func(w http.ResponseWriter, r *http.Request) {
+		rctx := chi.RouteContext(r.Context())
+		pathPrefix := strings.TrimSuffix(rctx.RoutePattern(), "/*")
+		fs := http.StripPrefix(pathPrefix, http.FileServer(root))
+		fs.ServeHTTP(w, r)
+	})
 }

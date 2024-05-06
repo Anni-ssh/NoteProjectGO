@@ -5,6 +5,7 @@ import (
 	"NoteProject/internal/service"
 	"NoteProject/internal/storage"
 	"NoteProject/internal/storage/postgres"
+	"NoteProject/internal/storage/redisDB"
 	"NoteProject/internal/transport/http-server/handler"
 	"NoteProject/internal/transport/http-server/server"
 	"NoteProject/pkg/logger"
@@ -33,7 +34,7 @@ func main() {
 
 	log := logger.SetupLogger(viper.GetString("env"))
 
-	db, err := postgres.NewPostgresDB(postgres.Config{
+	DB, err := postgres.NewPostgresDB(postgres.Config{
 		Host:     viper.GetString("db.Host"),
 		Port:     viper.GetString("db.Port"),
 		Username: os.Getenv("DB_USERNAME"),
@@ -43,9 +44,21 @@ func main() {
 	})
 	if err != nil {
 		log.Error("failed to init PostgresDB", slog.Any("error", err))
+		os.Exit(2)
 	}
 
-	repositories := storage.NewStorage(db)
+	redisClient, err := redisDB.NewRedisClient(redisDB.Config{
+		Addr:     viper.GetString("redisDB.Addr"),
+		Password: viper.GetString("redisDB.Password"),
+		DB:       viper.GetInt("redisDB.DB"),
+	})
+
+	if err != nil {
+		log.Error("failed to init RedisDB", slog.Any("error", err))
+		os.Exit(2)
+	}
+
+	repositories := storage.NewStorage(DB, redisClient)
 	services := service.NewService(repositories)
 	handlers := handler.NewHandler(services)
 

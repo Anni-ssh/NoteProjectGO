@@ -15,7 +15,7 @@ func NewAuthPostgres(db *sql.DB) *AuthPostgres {
 }
 
 func (s *AuthPostgres) CreateUser(user entities.User) (int, error) {
-	const operation = "storage.CreateUser"
+	const operation = "postgres.CreateUser"
 	q, err := s.db.Prepare("INSERT INTO users(name, password) VALUES($1, $2) RETURNING id")
 
 	if err != nil {
@@ -33,7 +33,7 @@ func (s *AuthPostgres) CreateUser(user entities.User) (int, error) {
 }
 
 func (s *AuthPostgres) CheckUser(username, password string) (*entities.User, error) {
-	const op = "storage.CheckUser"
+	const op = "postgres.CheckUser"
 
 	q, err := s.db.Prepare("SELECT * FROM users WHERE name = $1 AND password = $2")
 	if err != nil {
@@ -42,6 +42,9 @@ func (s *AuthPostgres) CheckUser(username, password string) (*entities.User, err
 
 	var user entities.User
 	rows, err := q.Query(username, password)
+	if err != nil {
+		return nil, fmt.Errorf("%s Query: %w", op, err)
+	}
 
 	for rows.Next() {
 		err = rows.Scan(&user.Id, &user.Username, &user.Password, &user.SuperUser)

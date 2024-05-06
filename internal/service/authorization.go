@@ -45,7 +45,7 @@ type tokenClaims struct {
 	jwt.StandardClaims
 }
 
-func (s *AuthService) GenAuthToken(user entities.User) (string, error) {
+func (s *AuthService) GenToken(user entities.User) (string, error) {
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, &tokenClaims{
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(tokensTTl).Unix(),
@@ -70,7 +70,7 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok {
-		return 0, errors.New("token claims are not if type")
+		return 0, errors.New("token claims are not of type")
 	}
 	return claims.UserID, nil
 }
