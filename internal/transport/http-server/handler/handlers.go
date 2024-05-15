@@ -1,9 +1,12 @@
 package handler
 
 import (
+	_ "NoteProject/docs"
 	"NoteProject/internal/service"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 	"log/slog"
 	"net/http"
 	"os"
@@ -31,8 +34,21 @@ func (h *Handler) InitRouter() *chi.Mux {
 	r := chi.NewRouter()
 	r.Use(middleware.Recoverer) //recovery из panic
 	r.Use(middleware.CleanPath) //исправление путей
-	//TO DO
-	//router.Use(logger.New(log))
+
+	//TODO
+	cors := cors.New(cors.Options{
+		AllowedOrigins:   []string{"http://localhost:8080"}, // Разрешаем только запросы с этого домена
+		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+		AllowCredentials: true,
+		MaxAge:           300, // Maximum value not ignored by any of major browsers
+	})
+
+	r.Use(cors.Handler)
+
+	r.Get("/swagger/*", httpSwagger.Handler(
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), //The url pointing to API definition
+	))
 
 	r.Get("/", h.home)
 
@@ -49,12 +65,12 @@ func (h *Handler) InitRouter() *chi.Mux {
 		r.Use(h.authMiddleware)
 
 		r.Get("/workspace", h.noteWorkspace)
-		r.Post("/create", h.createNote)
-		r.Put("/update", h.updateNote)
-		r.Delete("/delete", h.deleteNote)
+		r.Post("/list", h.notesList)
+		r.Post("/create", h.noteCreate)
+		r.Put("/update", h.noteUpdate)
+		r.Delete("/delete", h.noteDelete)
 	})
 
-	r.Get("/session", h.Session)
 	return r
 }
 
@@ -64,7 +80,7 @@ func fileServer(r chi.Router, path string) {
 
 	if strings.ContainsAny(path, "{}*") {
 		//TODO
-		panic("FileServer does not permit any URL parameters.")
+		panic("FileServer does not permit any URL parameters")
 	}
 
 	if path != "/" && path[len(path)-1] != '/' {

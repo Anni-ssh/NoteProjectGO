@@ -2,8 +2,7 @@ CREATE TABLE users
 (
     id SERIAL PRIMARY KEY,
     name varchar(255) UNIQUE NOT NULL,
-    password varchar(255) NOT NULL,
-    superUser INTEGER DEFAULT 0
+    password varchar(255) NOT NULL
 );
 
 CREATE TABLE notes (

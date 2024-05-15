@@ -3,7 +3,11 @@ package service
 import (
 	"NoteProject/internal/entities"
 	"NoteProject/internal/storage"
+	"context"
+	"time"
 )
+
+//go:generate mockgen -source=service.go -destination=mocks/mock.go
 
 type Authorization interface {
 	CreateUser(user entities.User) (int, error)
@@ -13,18 +17,27 @@ type Authorization interface {
 }
 
 type Session interface {
-	CreateSession(userID, token string) error
-	CheckSession(userID, token string) error
+	CreateSession(ctx context.Context, userID, token string, expiration time.Duration) error
+	CheckSession(ctx context.Context, userID, token string) error
+}
+
+type Note interface {
+	CreateNote(userID int, title, text string) (int, error)
+	NotesList(userID int) ([]entities.Note, error)
+	UpdateNote(note entities.Note) error
+	DeleteNote(noteID int) error
 }
 
 type Service struct {
 	Authorization
 	Session
+	Note
 }
 
-func NewService(r *storage.Storage) *Service {
+func NewService(s *storage.Storage) *Service {
 	return &Service{
-		Authorization: NewAuthService(r.Authorization),
-		Session:       NewSessionService(r.Session),
+		Authorization: NewAuthService(s.Authorization),
+		Session:       NewSessionService(s.Session),
+		Note:          NewNoteManage(s.NoteManage),
 	}
 }

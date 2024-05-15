@@ -18,18 +18,31 @@ import (
 	"syscall"
 )
 
+// @title NoteProject
+// @version 1.0
+// @description API Server for notes workspace
+// @host localhost:8080
+// @basePath /
+
+// @SecurityDefinitions.apikey ApiKeyAuth
+// @in header
+// @name Authorization
+
+const ctxTime = 5
+
 func main() {
 
 	if err := godotenv.Load(); err != nil {
 		slog.Error("invalid .env file", slog.Any("error", err))
-		os.Exit(2)
 	}
 
-	err := config.InitConfig()
+	cfgPath := os.Getenv("CONFIG_PATH")
+	cfgName := os.Getenv("CONFIG_NAME")
+	err := config.InitConfig(cfgPath, cfgName)
 
 	if err != nil {
 		slog.Error("invalid config", slog.Any("error", err))
-		os.Exit(2)
+		panic(err)
 	}
 
 	log := logger.SetupLogger(viper.GetString("env"))
@@ -42,9 +55,10 @@ func main() {
 		DBName:   viper.GetString("db.DBName"),
 		SSLMode:  viper.GetString("db.SSLMode"),
 	})
+
 	if err != nil {
 		log.Error("failed to init PostgresDB", slog.Any("error", err))
-		os.Exit(2)
+		panic(err)
 	}
 
 	redisClient, err := redisDB.NewRedisClient(redisDB.Config{
@@ -55,7 +69,7 @@ func main() {
 
 	if err != nil {
 		log.Error("failed to init RedisDB", slog.Any("error", err))
-		os.Exit(2)
+		panic(err)
 	}
 
 	repositories := storage.NewStorage(DB, redisClient)
@@ -70,10 +84,10 @@ func main() {
 	go func() {
 		if err = srv.Run(viper.GetString("server"), handlers.InitRouter()); err != nil {
 			log.Error("error starting server", slog.Any("error", err))
+			panic(err)
 		}
 	}()
 
-	//GracefulShutdown
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
 

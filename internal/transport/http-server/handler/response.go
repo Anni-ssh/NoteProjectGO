@@ -10,14 +10,14 @@ import (
 )
 
 type Response struct {
-	ErrorMsg string `json:"Error,omitempty"`
+	ErrMsg string `json:"Error,omitempty"`
 }
 
 func NewErrResponse(w http.ResponseWriter, statusCode int, errMessage string) {
 	w.WriteHeader(statusCode)
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(Response{ErrorMsg: errMessage}); err != nil {
+	if err := json.NewEncoder(w).Encode(Response{ErrMsg: errMessage}); err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		slog.Error("handler.NewResponse failed Encode JSON to response", slog.Any("error", err))
 	}
@@ -37,5 +37,5 @@ func ErrValidator(errs validator.ValidationErrors) Response {
 			errList = append(errList, fmt.Sprintf("field %s is not valid", err.Field()))
 		}
 	}
-	return Response{ErrorMsg: strings.Join(errList, ", ")}
+	return Response{ErrMsg: strings.Join(errList, ", ")}
 }

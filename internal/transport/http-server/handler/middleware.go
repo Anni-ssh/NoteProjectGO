@@ -2,17 +2,19 @@ package handler
 
 import (
 	"NoteProject/pkg/logger"
+	"context"
 	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 )
 
 const authHeader = "Authorization"
 
 func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		const op = "handler.userIdentity"
+		const op = "handler.authMiddleware"
 		log := h.Logs.With(slog.String("operation", op))
 
 		header := r.Header.Get(authHeader)
@@ -38,7 +40,10 @@ func (h *Handler) authMiddleware(next http.Handler) http.Handler {
 			return
 		}
 
-		err = h.services.Session.CheckSession(strconv.Itoa(userID), token)
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		err = h.services.Session.CheckSession(ctx, strconv.Itoa(userID), token)
 		if err != nil {
 			NewErrResponse(w, http.StatusUnauthorized, "Authorization Token is invalid")
 			log.Error("userToken is invalid", logger.Err(err))

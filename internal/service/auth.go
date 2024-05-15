@@ -10,33 +10,32 @@ import (
 	"time"
 )
 
+//go:generate mockgen -source=auth.go -destination=mocks/mock.go
 const (
 	salt      = "fkdie293dkenr"
 	tokensTTl = time.Hour * 24
-	signKey   = "sd329sdlkj239"
 )
 
 type AuthService struct {
-	repository storage.Authorization
+	storage storage.Authorization
 }
 
-func NewAuthService(repository storage.Authorization) *AuthService {
-	return &AuthService{repository: repository}
+func NewAuthService(s storage.Authorization) *AuthService {
+	return &AuthService{storage: s}
 }
 
 func (s *AuthService) CreateUser(user entities.User) (int, error) {
 	user.Password = genPasswordHash(user.Password)
-	return s.repository.CreateUser(user)
+	return s.storage.CreateUser(user)
 }
 
 func (s *AuthService) CheckUser(username, password string) (*entities.User, error) {
-	return s.repository.CheckUser(username, genPasswordHash(password))
+	return s.storage.CheckUser(username, genPasswordHash(password))
 }
 
 func genPasswordHash(password string) string {
 	hash := sha256.New()
 	hash.Write([]byte(password))
-
 	return fmt.Sprintf("%x", hash.Sum([]byte(salt)))
 }
 
@@ -53,7 +52,7 @@ func (s *AuthService) GenToken(user entities.User) (string, error) {
 		},
 		UserID: user.Id,
 	})
-	return token.SignedString([]byte(signKey))
+	return token.SignedString([]byte(salt))
 }
 
 func (s *AuthService) ParseToken(accessToken string) (int, error) {
@@ -61,7 +60,7 @@ func (s *AuthService) ParseToken(accessToken string) (int, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")
 		}
-		return []byte(signKey), nil
+		return []byte(salt), nil
 	})
 
 	if err != nil {

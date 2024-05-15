@@ -5,6 +5,8 @@ db:
   Port: "5432"
   DBName: NoteProject
   SSLMode: disable
+  Delay: 5
+  Attempts: 5
 redis:
   Addr:     "localhost:6379"
   Password: "1234"

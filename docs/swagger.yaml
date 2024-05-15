@@ -1,0 +1,308 @@
+basePath: /
+definitions:
+  entities.Note:
+    properties:
+      date:
+        type: string
+      done:
+        type: boolean
+      id:
+        type: integer
+      text:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - text
+    - title
+    - user_id
+    type: object
+  handler.Response:
+    properties:
+      Error:
+        type: string
+    type: object
+  handler.inputNote:
+    properties:
+      text:
+        type: string
+      title:
+        type: string
+      user_id:
+        type: integer
+    required:
+    - text
+    - title
+    - user_id
+    type: object
+  handler.reqNote:
+    properties:
+      note_id:
+        type: integer
+    required:
+    - note_id
+    type: object
+  handler.reqUser:
+    properties:
+      user_id:
+        type: integer
+    required:
+    - user_id
+    type: object
+  handler.userInput:
+    properties:
+      password:
+        type: string
+      username:
+        type: string
+    required:
+    - password
+    - username
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API Server for notes workspace
+  title: NoteProject
+  version: "1.0"
+paths:
+  /auth/sign-in:
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос предназначенный для входа в приложение.
+      parameters:
+      - description: Данные для создания заметки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.userInput'
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "401":
+          description: Ошибка создания заметки
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "422":
+          description: Неправильный формат данных
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/handler.Response'
+      summary: signIn Вход в приложение
+      tags:
+      - Auth
+  /auth/sign-up:
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на регистрацию в приложение.
+      parameters:
+      - description: Данные для создания пользователя
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.userInput'
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "401":
+          description: Ошибка создания заметки
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "422":
+          description: Неправильный формат данных
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/handler.Response'
+      summary: signUp Регистрация в приложенеи
+      tags:
+      - Auth
+  /note/create:
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на создание новой заметки.
+      parameters:
+      - description: Данные для создания заметки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.inputNote'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "401":
+          description: Ошибка создания заметки
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "422":
+          description: Неправильный формат данных
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/handler.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Create Создать заметку
+      tags:
+      - Notes
+  /note/delete:
+    delete:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на удаление заметок.
+      parameters:
+      - description: Данные для удаления заметки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.reqNote'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "401":
+          description: Ошибка создания заметки
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "422":
+          description: Неправильный формат данных
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/handler.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Удалить заметку
+      tags:
+      - Notes
+  /note/list:
+    post:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на отображение заметок.
+      parameters:
+      - description: Данные для отображения заметок
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/handler.reqUser'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "401":
+          description: Ошибка создания заметки
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "422":
+          description: Неправильный формат данных
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/handler.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: List Показать заметки
+      tags:
+      - Notes
+  /note/update:
+    put:
+      consumes:
+      - application/json
+      description: Обрабатывает запрос на обновлние заметоки.
+      parameters:
+      - description: Данные для обновления заметки
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Note'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Успешный ответ
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Ошибка валидации
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "401":
+          description: Ошибка создания заметки
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "422":
+          description: Неправильный формат данных
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Внутренняя ошибка сервера
+          schema:
+            $ref: '#/definitions/handler.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update Обновить заметку
+      tags:
+      - Notes
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
