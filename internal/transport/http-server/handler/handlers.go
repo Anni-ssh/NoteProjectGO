@@ -3,15 +3,16 @@ package handler
 import (
 	_ "NoteProject/docs"
 	"NoteProject/internal/service"
-	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/chi/v5/middleware"
-	"github.com/go-chi/cors"
-	httpSwagger "github.com/swaggo/http-swagger"
 	"log/slog"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/chi/v5/middleware"
+	"github.com/go-chi/cors"
+	httpSwagger "github.com/swaggo/http-swagger"
 )
 
 const (
@@ -35,19 +36,19 @@ func (h *Handler) InitRouter() *chi.Mux {
 	r.Use(middleware.Recoverer) //recovery из panic
 	r.Use(middleware.CleanPath) //исправление путей
 
-	//TODO
-	cors := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:8080"}, // Разрешаем только запросы с этого домена
-		AllowedMethods:   []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
-		AllowedHeaders:   []string{"Accept", "Authorization", "Content-Type"},
+	c := cors.New(cors.Options{
+		AllowedOrigins: []string{"http://localhost:8080"}, // Разрешаем только запросы с данных домена
+		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
+		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "Content-Length", "Cache-Control",
+			"Connection", "Host", "Origin"},
 		AllowCredentials: true,
-		MaxAge:           300, // Maximum value not ignored by any of major browsers
+		MaxAge:           300,
 	})
 
-	r.Use(cors.Handler)
+	r.Use(c.Handler)
 
 	r.Get("/swagger/*", httpSwagger.Handler(
-		httpSwagger.URL("http://localhost:8080/swagger/doc.json"), //The url pointing to API definition
+		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	))
 
 	r.Get("/", h.home)

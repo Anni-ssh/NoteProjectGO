@@ -5,11 +5,12 @@ import (
 	"NoteProject/pkg/logger"
 	"encoding/json"
 	"errors"
-	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 	"io"
 	"log/slog"
 	"net/http"
+
+	"github.com/go-chi/render"
+	"github.com/go-playground/validator/v10"
 )
 
 type inputNote struct {
@@ -199,7 +200,7 @@ func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 	log.Info("Notes successfully update", "noteID", note.Id)
 }
 
-// @Summary Update Удалить заметку
+// @Summary delete Удалить заметку
 // @Description Обрабатывает запрос на удаление заметок.
 // @Tags Notes
 // @Accept json

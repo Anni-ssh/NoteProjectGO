@@ -4,12 +4,13 @@ import (
 	service2 "NoteProject/internal/service"
 	mock_service "NoteProject/internal/service/mocks"
 	"NoteProject/pkg/logger"
-	"github.com/go-chi/chi/v5"
-	"github.com/golang/mock/gomock"
-	"github.com/stretchr/testify/assert"
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/go-chi/chi/v5"
+	"github.com/golang/mock/gomock"
+	"github.com/stretchr/testify/assert"
 )
 
 func TestHandler_create(t *testing.T) {

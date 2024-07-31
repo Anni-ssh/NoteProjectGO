@@ -1,8 +1,6 @@
 package handler
 
 import (
-	"NoteProject/internal/transport/http-server/pages"
-	"log/slog"
 	"net/http"
 )
 
@@ -17,12 +15,15 @@ import (
 
 func (h *Handler) home(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.home"
-	log := h.Logs.With(slog.String("operation", op))
+	// log := h.Logs.With(slog.String("operation", op))
 
-	err := pages.Home(w)
-	if err != nil {
-		NewErrResponse(w, http.StatusInternalServerError, "Internal Server Error")
-		log.Error("Server error", slog.Any("error", err))
-		return
-	}
+	_, _ = w.Write([]byte("It is Home"))
+
+	// err := pages.Home(w)
+	// if err != nil {
+	// 	NewErrResponse(w, http.StatusInternalServerError, "Internal Server Error")
+	// 	log.Error("Server error", slog.Any("error", err))
+	// 	return
+	// }
+
 }

@@ -200,7 +200,7 @@ const docTemplate = `{
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Update Удалить заметку",
+                "summary": "delete Удалить заметку",
                 "parameters": [
                     {
                         "description": "Данные для удаления заметки",
@@ -378,6 +378,7 @@ const docTemplate = `{
     },
     "definitions": {
         "entities.Note": {
+            "description": "Note structure",
             "type": "object",
             "required": [
                 "text",

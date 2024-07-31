@@ -1,6 +1,7 @@
 basePath: /
 definitions:
   entities.Note:
+    description: Note structure
     properties:
       date:
         type: string
@@ -215,7 +216,7 @@ paths:
             $ref: '#/definitions/handler.Response'
       security:
       - ApiKeyAuth: []
-      summary: Update Удалить заметку
+      summary: delete Удалить заметку
       tags:
       - Notes
   /note/list:

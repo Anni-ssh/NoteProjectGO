@@ -1,7 +1,6 @@
 package main
 
 import (
-	"NoteProject/internal/config"
 	"NoteProject/internal/service"
 	"NoteProject/internal/storage"
 	"NoteProject/internal/storage/postgres"
@@ -9,13 +8,16 @@ import (
 	"NoteProject/internal/transport/http-server/handler"
 	"NoteProject/internal/transport/http-server/server"
 	"NoteProject/pkg/logger"
-	"github.com/joho/godotenv"
-	_ "github.com/lib/pq"
-	"github.com/spf13/viper"
+	migrations "NoteProject/pkg/migration"
 	"log/slog"
 	"os"
 	"os/signal"
+	"strconv"
 	"syscall"
+	"time"
+
+	"github.com/joho/godotenv"
+	_ "github.com/lib/pq"
 )
 
 // @title NoteProject
@@ -28,43 +30,75 @@ import (
 // @in header
 // @name Authorization
 
-const ctxTime = 5
-
 func main() {
 
+	// Загрузка переменных окружения из файла .env
 	if err := godotenv.Load(); err != nil {
 		slog.Error("invalid .env file", slog.Any("error", err))
 	}
 
-	cfgPath := os.Getenv("CONFIG_PATH")
-	cfgName := os.Getenv("CONFIG_NAME")
-	err := config.InitConfig(cfgPath, cfgName)
+	// Инициализация логгера
+	log := logger.SetupLogger(os.Getenv("ENV"))
+
+	// Чтение параметров базы данных из переменных окружения
+	dbHost := os.Getenv("DB_HOST")
+	dbPort := os.Getenv("DB_PORT")
+	dbUsername := os.Getenv("DB_USERNAME")
+	dbPassword := os.Getenv("DB_PASSWORD")
+	dbName := os.Getenv("DB_NAME")
+	dbSSLMode := os.Getenv("DB_SSLMODE")
+
+	attempts, err := strconv.Atoi(os.Getenv("DB_ATTEMPTS"))
 
 	if err != nil {
-		slog.Error("invalid config", slog.Any("error", err))
+		log.Error("failed conv str to int", slog.Any("error", err))
 		panic(err)
 	}
 
-	log := logger.SetupLogger(viper.GetString("env"))
+	delay, err := strconv.Atoi(os.Getenv("DB_DELAY"))
+
+	if err != nil {
+		log.Error("failed conv str to int", slog.Any("error", err))
+		panic(err)
+	}
 
 	DB, err := postgres.NewPostgresDB(postgres.Config{
-		Host:     viper.GetString("db.Host"),
-		Port:     viper.GetString("db.Port"),
-		Username: os.Getenv("DB_USERNAME"),
-		Password: os.Getenv("DB_PASSWORD"),
-		DBName:   viper.GetString("db.DBName"),
-		SSLMode:  viper.GetString("db.SSLMode"),
-	})
+		Host:     dbHost,
+		Port:     dbPort,
+		Username: dbUsername,
+		Password: dbPassword,
+		DBName:   dbName,
+		SSLMode:  dbSSLMode,
+	}, attempts, time.Duration(delay))
 
 	if err != nil {
 		log.Error("failed to init PostgresDB", slog.Any("error", err))
 		panic(err)
 	}
 
+	// Миграции БД
+	err = migrations.RunMigrations(DB)
+	if err != nil {
+		log.Error("Failed to create create migrations", slog.Any("error", err))
+		panic(err)
+	}
+
+	log.Info("Migrations applied successfully!")
+
+	// Чтение параметров Redis из переменных окружения
+	redisAddr := os.Getenv("REDIS_ADDR")
+	redisPassword := os.Getenv("REDIS_PASSWORD")
+	redisNum, err := strconv.Atoi(os.Getenv("REDIS_DB_NUM"))
+
+	if err != nil {
+		log.Error("failed conv str to int", slog.Any("error", err))
+		panic(err)
+	}
+
 	redisClient, err := redisDB.NewRedisClient(redisDB.Config{
-		Addr:     viper.GetString("redisDB.Addr"),
-		Password: viper.GetString("redisDB.Password"),
-		DB:       viper.GetInt("redisDB.DB"),
+		Addr:     redisAddr,
+		Password: redisPassword,
+		DB:       redisNum,
 	})
 
 	if err != nil {
@@ -82,7 +116,7 @@ func main() {
 	log.Info("Starting server...")
 
 	go func() {
-		if err = srv.Run(viper.GetString("server"), handlers.InitRouter()); err != nil {
+		if err = srv.Run(os.Getenv("SERVER_HOST")+":"+os.Getenv("SERVER_PORT"), handlers.InitRouter()); err != nil {
 			log.Error("error starting server", slog.Any("error", err))
 			panic(err)
 		}
@@ -93,4 +127,5 @@ func main() {
 
 	sig := <-sigChan
 	log.Info("Stopped by Admin", "Signal", sig)
+
 }

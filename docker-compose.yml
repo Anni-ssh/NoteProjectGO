@@ -1,0 +1,96 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: 12345
+      POSTGRES_DB: NoteProject
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - mynetwork
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d NoteProject"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
+  # доп контейнер для создания схемы db
+  initdb:
+    image: postgres:latest
+    depends_on:
+      - postgres
+    environment:
+      PGPASSWORD: 12345
+    command: >
+      bash -c "
+      until pg_isready -h postgres -U postgres; do
+        sleep 1;
+      done;
+      psql -h postgres -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'NoteProject'\" | grep -q 1 || psql -h postgres -U postgres -c \"CREATE DATABASE \\\"NoteProject\\\"\";"
+
+    networks:
+      - mynetwork
+
+
+  redis:
+    image: redis:latest
+    container_name: redis
+    ports:
+      - "6379:6379"
+    networks:
+      - mynetwork
+
+  goapp:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    environment:
+      # Общая среда
+      ENV: local
+
+      # Настройки сервера
+      SERVER_HOST: 0.0.0.0   #приложение должно слушать на всех интерфейсах, если localhost - это внутри контейнера
+      SERVER_PORT: 8080
+
+      # Настройки базы данных PostgreSQL
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: NoteProject
+      DB_USERNAME: postgres
+      DB_PASSWORD: 12345
+      DB_SSLMODE: disable
+      DB_DELAY: 5
+      DB_ATTEMPTS: 5
+
+      # Настройки Redis
+      REDIS_ADDR: redis:6379
+      REDIS_PASSWORD: 1234
+      REDIS_DB_NUM: 0
+
+      # Ключ сессии
+      SESSION_KEY: wfkjhwe328
+
+
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./migrations:/migrations
+    networks:
+      - mynetwork
+
+volumes:
+  postgres_data:
+
+networks:
+  mynetwork:
+    driver: bridge

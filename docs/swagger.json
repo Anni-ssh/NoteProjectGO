@@ -194,7 +194,7 @@
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Update Удалить заметку",
+                "summary": "delete Удалить заметку",
                 "parameters": [
                     {
                         "description": "Данные для удаления заметки",
@@ -372,6 +372,7 @@
     },
     "definitions": {
         "entities.Note": {
+            "description": "Note structure",
             "type": "object",
             "required": [
                 "text",

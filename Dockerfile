@@ -1,5 +1,5 @@
-FROM golang:1.22-alpine AS byilder
-LABEL authors="AnniSSH"
+FROM golang:1.22-alpine AS builder
+LABEL author="AnniSSH"
 
 WORKDIR /user/local/src
 
@@ -13,8 +13,14 @@ RUN go build -o ./bin/app ./cmd/NoteProject/main.go
 
 FROM alpine AS runner
 
-COPY --from=byilder /user/local/src/bin/app /
-COPY config/config.yaml /config.yaml
+RUN apk --no-cache add bash
 
-CMD ["/app"]
+COPY --from=builder /user/local/src/bin/app /
+COPY --from=builder /user/local/src/migrations /migrations
+
+COPY wait-for-it.sh /wait-for-it.sh
+
+CMD ["./wait-for-it.sh", "postgres:5432", "--", "/app"]
+
+EXPOSE 8080
 
