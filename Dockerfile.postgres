@@ -1,0 +1,7 @@
+FROM postgres:latest
+
+COPY scripts/init-postgres.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-postgres.sh
+
+# Устанавливаем команду по умолчанию для запуска PostgreSQL и инициализации
+CMD ["sh", "-c", "docker-entrypoint.sh postgres && /usr/local/bin/init-postgres.sh"]

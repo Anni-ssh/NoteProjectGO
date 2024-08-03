@@ -5,6 +5,7 @@ import (
 	mock_service "NoteProject/internal/service/mocks"
 	"NoteProject/pkg/logger"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 
@@ -51,7 +52,7 @@ func TestHandler_create(t *testing.T) {
 				Note: noteManage,
 			}
 
-			handler := Handler{services: service, Logs: logger.SetupLogger("local")}
+			handler := Handler{services: service, Logs: logger.SetupLogger("local", os.Stdout)}
 
 			r := chi.NewRouter()
 			r.Post("/note/create", handler.noteCreate)

@@ -5,9 +5,9 @@ FROM rabbitmq:3.10.7-management
 RUN apt-get update && apt-get install -y curl
 
 # Копируем скрипт и даем ему права на выполнение
-COPY scripts/initRabbitMQ.sh /usr/local/bin/
-RUN chmod +x /usr/local/bin/initRabbitMQ.sh
+COPY scripts/init-rabbitmq.sh /usr/local/bin/
+RUN chmod +x /usr/local/bin/init-rabbitmq.sh
 
 # Устанавливаем команду по умолчанию для запуска RabbitMQ сервера
-ENTRYPOINT ["/usr/local/bin/initRabbitMQ.sh"]
+ENTRYPOINT ["/usr/local/bin/init-rabbitmq.sh"]
 
