@@ -21,7 +21,7 @@ services:
       start_period: 30s
       timeout: 5s
 
-  # доп контейнер для создания схемы db
+  # Дополнительный контейнер для создания схемы базы данных
   initdb:
     image: postgres:latest
     depends_on:
@@ -34,10 +34,8 @@ services:
         sleep 1;
       done;
       psql -h postgres -U postgres -tc \"SELECT 1 FROM pg_database WHERE datname = 'NoteProject'\" | grep -q 1 || psql -h postgres -U postgres -c \"CREATE DATABASE \\\"NoteProject\\\"\";"
-
     networks:
       - mynetwork
-
 
   redis:
     image: redis:latest
@@ -46,20 +44,42 @@ services:
       - "6379:6379"
     networks:
       - mynetwork
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      retries: 5
+      start_period: 30s
+      timeout: 5s
+
+  rabbitmq:
+    build:
+      context: .
+      dockerfile: Dockerfile.rabbitmq
+    container_name: rabbitmq
+    ports:
+      - "5672:5672"   # Порт для подключения к RabbitMQ
+      - "15672:15672" # Порт для веб-интерфейса RabbitMQ
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+      RABBITMQ_DEFAULT_VHOST: /
+    networks:
+      - mynetwork
 
   goapp:
-    build: .
+    build:
+      context: .
+      dockerfile: Dockerfile.goapp
     depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_started
+      - postgres
+      - redis
+      - rabbitmq
     environment:
       # Общая среда
       ENV: local
 
       # Настройки сервера
-      SERVER_HOST: 0.0.0.0   #приложение должно слушать на всех интерфейсах, если localhost - это внутри контейнера
+      SERVER_HOST: 0.0.0.0   # Приложение должно слушать на всех интерфейсах, если localhost - это только для окружения контейнера
       SERVER_PORT: 8080
 
       # Настройки базы данных PostgreSQL
@@ -77,10 +97,16 @@ services:
       REDIS_PASSWORD: 1234
       REDIS_DB_NUM: 0
 
+      # Настройки RabbitMQ
+      RABBITMQ_SCHEME: amqp
+      RABBITMQ_USER: guest
+      RABBITMQ_PASSWORD: guest
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_VHOST: /
+
       # Ключ сессии
       SESSION_KEY: wfkjhwe328
-
-
     ports:
       - "8080:8080"
     volumes:

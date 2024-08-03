@@ -1,19 +1,19 @@
 package logger
 
 import (
+	"io"
 	"log/slog"
-	"os"
 )
 
-func SetupLogger(env string) *slog.Logger {
+func SetupLogger(env string, output io.Writer) *slog.Logger {
 	var logger *slog.Logger
 	switch env {
 	case "local":
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})).With(slog.String("env", env))
+		logger = slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: slog.LevelDebug})).With(slog.String("env", env))
 	case "development":
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug})).With(slog.String("env", env))
+		logger = slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: slog.LevelDebug})).With(slog.String("env", env))
 	case "production":
-		logger = slog.New(slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelInfo})).With(slog.String("env", env))
+		logger = slog.New(slog.NewJSONHandler(output, &slog.HandlerOptions{Level: slog.LevelInfo})).With(slog.String("env", env))
 	}
 
 	return logger
