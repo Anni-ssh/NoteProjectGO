@@ -38,7 +38,7 @@ func (s *AuthPostgres) CreateUser(user entities.User) (int, error) {
 		}
 		// Проверка ошибки уникальность значения
 		if pgErr.Code.Name() == "unique_violation" {
-			return 0, errs.ErrUserExists
+			return 0, fmt.Errorf("%s: %w", operation, errs.ErrUserExists)
 		}
 		return 0, fmt.Errorf("%s Scan: %w", operation, err)
 	}
@@ -59,7 +59,7 @@ func (s *AuthPostgres) CheckUser(username, password string) (entities.User, erro
 	rows, err := q.Query(username, password)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
-			return user, errs.ErrUserNotExists
+			return user, fmt.Errorf("%s: %w", op, errs.ErrUserNotExists)
 		}
 		return user, fmt.Errorf("%s Query: %w", op, err)
 	}

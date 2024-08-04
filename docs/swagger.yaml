@@ -33,24 +33,6 @@ definitions:
         type: string
       user_id:
         type: integer
-    required:
-    - text
-    - title
-    - user_id
-    type: object
-  handler.reqNote:
-    properties:
-      note_id:
-        type: integer
-    required:
-    - note_id
-    type: object
-  handler.reqUser:
-    properties:
-      user_id:
-        type: integer
-    required:
-    - user_id
     type: object
   handler.userInput:
     properties:
@@ -73,9 +55,9 @@ paths:
     post:
       consumes:
       - application/json
-      description: Обрабатывает запрос предназначенный для входа в приложение.
+      description: Handles the request intended for logging into the application.
       parameters:
-      - description: Данные для создания заметки
+      - description: User data for login
         in: body
         name: body
         required: true
@@ -84,32 +66,32 @@ paths:
       produces:
       - application/json
       responses:
+        "200":
+          description: Login successful
+          schema:
+            type: string
         "400":
-          description: Ошибка валидации
+          description: Bad request
           schema:
             $ref: '#/definitions/handler.Response'
         "401":
-          description: Ошибка создания заметки
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "422":
-          description: Неправильный формат данных
+          description: Unauthorized access
           schema:
             $ref: '#/definitions/handler.Response'
         "500":
-          description: Внутренняя ошибка сервера
+          description: Internal server error
           schema:
             $ref: '#/definitions/handler.Response'
-      summary: signIn Вход в приложение
+      summary: signIn Log in to the app
       tags:
       - Auth
   /auth/sign-up:
     post:
       consumes:
       - application/json
-      description: Обрабатывает запрос на регистрацию в приложение.
+      description: Handles the request to register a user in the application.
       parameters:
-      - description: Данные для создания пользователя
+      - description: User data for creation
         in: body
         name: body
         required: true
@@ -118,32 +100,33 @@ paths:
       produces:
       - application/json
       responses:
+        "201":
+          description: User ID
+          schema:
+            additionalProperties: true
+            type: object
         "400":
-          description: Ошибка валидации
+          description: Bad request
           schema:
             $ref: '#/definitions/handler.Response'
-        "401":
-          description: Ошибка создания заметки
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "422":
-          description: Неправильный формат данных
+        "409":
+          description: 'Conflict: User already exists'
           schema:
             $ref: '#/definitions/handler.Response'
         "500":
-          description: Внутренняя ошибка сервера
+          description: Internal server error
           schema:
             $ref: '#/definitions/handler.Response'
-      summary: signUp Регистрация в приложенеи
+      summary: signUp User registration
       tags:
       - Auth
   /note/create:
     post:
       consumes:
       - application/json
-      description: Обрабатывает запрос на создание новой заметки.
+      description: Handles the request to create a new note.
       parameters:
-      - description: Данные для создания заметки
+      - description: Data for creating a note
         in: body
         name: body
         required: true
@@ -152,121 +135,104 @@ paths:
       produces:
       - application/json
       responses:
-        "200":
-          description: Успешный ответ
+        "201":
+          description: Return id
           schema:
             additionalProperties: true
             type: object
         "400":
-          description: Ошибка валидации
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "401":
-          description: Ошибка создания заметки
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "422":
-          description: Неправильный формат данных
+          description: Bad Request
           schema:
             $ref: '#/definitions/handler.Response'
         "500":
-          description: Внутренняя ошибка сервера
+          description: Internal server error
           schema:
             $ref: '#/definitions/handler.Response'
       security:
       - ApiKeyAuth: []
-      summary: Create Создать заметку
+      summary: Create a Note
       tags:
       - Notes
-  /note/delete:
+  /note/delete/{noteID}:
     delete:
       consumes:
       - application/json
-      description: Обрабатывает запрос на удаление заметок.
+      description: Handles the request to delete a note.
       parameters:
-      - description: Данные для удаления заметки
-        in: body
-        name: body
+      - description: Note ID
+        in: path
+        name: noteID
         required: true
-        schema:
-          $ref: '#/definitions/handler.reqNote'
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Успешный ответ
+          description: Successful response
           schema:
             additionalProperties: true
             type: object
         "400":
-          description: Ошибка валидации
+          description: Bad request
           schema:
             $ref: '#/definitions/handler.Response'
-        "401":
-          description: Ошибка создания заметки
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "422":
-          description: Неправильный формат данных
+        "404":
+          description: Note not found
           schema:
             $ref: '#/definitions/handler.Response'
         "500":
-          description: Внутренняя ошибка сервера
+          description: Internal server error
           schema:
             $ref: '#/definitions/handler.Response'
       security:
       - ApiKeyAuth: []
-      summary: delete Удалить заметку
+      summary: Delete the note
       tags:
       - Notes
-  /note/list:
-    post:
+  /note/list/{userID}:
+    get:
       consumes:
       - application/json
-      description: Обрабатывает запрос на отображение заметок.
+      description: Handles the request to display notes.
       parameters:
-      - description: Данные для отображения заметок
-        in: body
-        name: body
+      - description: User ID
+        in: path
+        name: userID
         required: true
-        schema:
-          $ref: '#/definitions/handler.reqUser'
+        type: integer
       produces:
       - application/json
       responses:
         "200":
-          description: Успешный ответ
+          description: OK
           schema:
-            additionalProperties: true
-            type: object
+            items:
+              $ref: '#/definitions/entities.Note'
+            type: array
         "400":
-          description: Ошибка валидации
+          description: Bad request
           schema:
             $ref: '#/definitions/handler.Response'
-        "401":
-          description: Ошибка создания заметки
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "422":
-          description: Неправильный формат данных
+        "404":
+          description: Note not found
           schema:
             $ref: '#/definitions/handler.Response'
         "500":
-          description: Внутренняя ошибка сервера
+          description: Internal server error
           schema:
             $ref: '#/definitions/handler.Response'
       security:
       - ApiKeyAuth: []
-      summary: List Показать заметки
+      summary: List Show users notes
       tags:
       - Notes
   /note/update:
     put:
       consumes:
       - application/json
-      description: Обрабатывает запрос на обновлние заметоки.
+      description: Handles the request to update a note.
       parameters:
-      - description: Данные для обновления заметки
+      - description: Data for updating the note
         in: body
         name: body
         required: true
@@ -276,29 +242,25 @@ paths:
       - application/json
       responses:
         "200":
-          description: Успешный ответ
+          description: Successfully updated note
           schema:
             additionalProperties: true
             type: object
         "400":
-          description: Ошибка валидации
+          description: Bad request
           schema:
             $ref: '#/definitions/handler.Response'
-        "401":
-          description: Ошибка создания заметки
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "422":
-          description: Неправильный формат данных
+        "404":
+          description: Note not found
           schema:
             $ref: '#/definitions/handler.Response'
         "500":
-          description: Внутренняя ошибка сервера
+          description: Internal server error
           schema:
             $ref: '#/definitions/handler.Response'
       security:
       - ApiKeyAuth: []
-      summary: Update Обновить заметку
+      summary: Update the note
       tags:
       - Notes
 securityDefinitions:

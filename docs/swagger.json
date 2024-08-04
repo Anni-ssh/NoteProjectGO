@@ -11,7 +11,7 @@
     "paths": {
         "/auth/sign-in": {
             "post": {
-                "description": "Обрабатывает запрос предназначенный для входа в приложение.",
+                "description": "Handles the request intended for logging into the application.",
                 "consumes": [
                     "application/json"
                 ],
@@ -21,10 +21,10 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "signIn Вход в приложение",
+                "summary": "signIn Log in to the app",
                 "parameters": [
                     {
-                        "description": "Данные для создания заметки",
+                        "description": "User data for login",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -34,26 +34,26 @@
                     }
                 ],
                 "responses": {
+                    "200": {
+                        "description": "Login successful",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "400": {
-                        "description": "Ошибка валидации",
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "401": {
-                        "description": "Ошибка создания заметки",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Неправильный формат данных",
+                        "description": "Unauthorized access",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "500": {
-                        "description": "Внутренняя ошибка сервера",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
@@ -63,7 +63,7 @@
         },
         "/auth/sign-up": {
             "post": {
-                "description": "Обрабатывает запрос на регистрацию в приложение.",
+                "description": "Handles the request to register a user in the application.",
                 "consumes": [
                     "application/json"
                 ],
@@ -73,10 +73,10 @@
                 "tags": [
                     "Auth"
                 ],
-                "summary": "signUp Регистрация в приложенеи",
+                "summary": "signUp User registration",
                 "parameters": [
                     {
-                        "description": "Данные для создания пользователя",
+                        "description": "User data for creation",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -86,26 +86,27 @@
                     }
                 ],
                 "responses": {
+                    "201": {
+                        "description": "User ID",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
                     "400": {
-                        "description": "Ошибка валидации",
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
-                    "401": {
-                        "description": "Ошибка создания заметки",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Неправильный формат данных",
+                    "409": {
+                        "description": "Conflict: User already exists",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "500": {
-                        "description": "Внутренняя ошибка сервера",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
@@ -120,7 +121,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Обрабатывает запрос на создание новой заметки.",
+                "description": "Handles the request to create a new note.",
                 "consumes": [
                     "application/json"
                 ],
@@ -130,10 +131,10 @@
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Create Создать заметку",
+                "summary": "Create a Note",
                 "parameters": [
                     {
-                        "description": "Данные для создания заметки",
+                        "description": "Data for creating a note",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -143,33 +144,21 @@
                     }
                 ],
                 "responses": {
-                    "200": {
-                        "description": "Успешный ответ",
+                    "201": {
+                        "description": "Return id",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Ошибка валидации",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "401": {
-                        "description": "Ошибка создания заметки",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Неправильный формат данных",
+                        "description": "Bad Request",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "500": {
-                        "description": "Внутренняя ошибка сервера",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
@@ -177,14 +166,14 @@
                 }
             }
         },
-        "/note/delete": {
+        "/note/delete/{noteID}": {
             "delete": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Обрабатывает запрос на удаление заметок.",
+                "description": "Handles the request to delete a note.",
                 "consumes": [
                     "application/json"
                 ],
@@ -194,46 +183,38 @@
                 "tags": [
                     "Notes"
                 ],
-                "summary": "delete Удалить заметку",
+                "summary": "Delete the note",
                 "parameters": [
                     {
-                        "description": "Данные для удаления заметки",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handler.reqNote"
-                        }
+                        "type": "integer",
+                        "description": "Note ID",
+                        "name": "noteID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Успешный ответ",
+                        "description": "Successful response",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Ошибка валидации",
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
-                    "401": {
-                        "description": "Ошибка создания заметки",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Неправильный формат данных",
+                    "404": {
+                        "description": "Note not found",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "500": {
-                        "description": "Внутренняя ошибка сервера",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
@@ -241,14 +222,14 @@
                 }
             }
         },
-        "/note/list": {
-            "post": {
+        "/note/list/{userID}": {
+            "get": {
                 "security": [
                     {
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Обрабатывает запрос на отображение заметок.",
+                "description": "Handles the request to display notes.",
                 "consumes": [
                     "application/json"
                 ],
@@ -258,46 +239,40 @@
                 "tags": [
                     "Notes"
                 ],
-                "summary": "List Показать заметки",
+                "summary": "List Show users notes",
                 "parameters": [
                     {
-                        "description": "Данные для отображения заметок",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/handler.reqUser"
-                        }
+                        "type": "integer",
+                        "description": "User ID",
+                        "name": "userID",
+                        "in": "path",
+                        "required": true
                     }
                 ],
                 "responses": {
                     "200": {
-                        "description": "Успешный ответ",
+                        "description": "OK",
                         "schema": {
-                            "type": "object",
-                            "additionalProperties": true
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/entities.Note"
+                            }
                         }
                     },
                     "400": {
-                        "description": "Ошибка валидации",
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
-                    "401": {
-                        "description": "Ошибка создания заметки",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Неправильный формат данных",
+                    "404": {
+                        "description": "Note not found",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "500": {
-                        "description": "Внутренняя ошибка сервера",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
@@ -312,7 +287,7 @@
                         "ApiKeyAuth": []
                     }
                 ],
-                "description": "Обрабатывает запрос на обновлние заметоки.",
+                "description": "Handles the request to update a note.",
                 "consumes": [
                     "application/json"
                 ],
@@ -322,10 +297,10 @@
                 "tags": [
                     "Notes"
                 ],
-                "summary": "Update Обновить заметку",
+                "summary": "Update the note",
                 "parameters": [
                     {
-                        "description": "Данные для обновления заметки",
+                        "description": "Data for updating the note",
                         "name": "body",
                         "in": "body",
                         "required": true,
@@ -336,32 +311,26 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Успешный ответ",
+                        "description": "Successfully updated note",
                         "schema": {
                             "type": "object",
                             "additionalProperties": true
                         }
                     },
                     "400": {
-                        "description": "Ошибка валидации",
+                        "description": "Bad request",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
-                    "401": {
-                        "description": "Ошибка создания заметки",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "422": {
-                        "description": "Неправильный формат данных",
+                    "404": {
+                        "description": "Note not found",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
                     },
                     "500": {
-                        "description": "Внутренняя ошибка сервера",
+                        "description": "Internal server error",
                         "schema": {
                             "$ref": "#/definitions/handler.Response"
                         }
@@ -410,11 +379,6 @@
         },
         "handler.inputNote": {
             "type": "object",
-            "required": [
-                "text",
-                "title",
-                "user_id"
-            ],
             "properties": {
                 "text": {
                     "type": "string"
@@ -422,28 +386,6 @@
                 "title": {
                     "type": "string"
                 },
-                "user_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "handler.reqNote": {
-            "type": "object",
-            "required": [
-                "note_id"
-            ],
-            "properties": {
-                "note_id": {
-                    "type": "integer"
-                }
-            }
-        },
-        "handler.reqUser": {
-            "type": "object",
-            "required": [
-                "user_id"
-            ],
-            "properties": {
                 "user_id": {
                     "type": "integer"
                 }

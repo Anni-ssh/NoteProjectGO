@@ -2,48 +2,35 @@ package handler
 
 import (
 	"NoteProject/internal/entities"
+	"NoteProject/internal/errs"
 	"NoteProject/pkg/logger"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
+	"strconv"
 
+	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
-	"github.com/go-playground/validator/v10"
 )
 
 type inputNote struct {
-	UserId int    `json:"user_id" validate:"required"`
-	Title  string `json:"title" validate:"required"`
-	Text   string `json:"text" validate:"required"`
+	UserId int    `json:"user_id"`
+	Title  string `json:"title"`
+	Text   string `json:"text"`
 }
 
-type reqNote struct {
-	ID int `json:"note_id" validate:"required"`
-}
-
-type reqUser struct {
-	ID int `json:"user_id" validate:"required"`
-}
-
-const (
-	errEmptyBody   = "Request body is empty"
-	errInvalidBody = "Request body is invalid"
-	errInvalidData = "Request data is invalid"
-)
-
-// @Summary Create Создать заметку
-// @Description Обрабатывает запрос на создание новой заметки.
+// @Summary Create a Note
+// @Description Handles the request to create a new note.
 // @Tags Notes
 // @Accept json
 // @Produce json
-// @Param body body inputNote true "Данные для создания заметки"
-// @Success 200 {object} map[string]interface{} "Успешный ответ"
-// @Failure 400 {object} Response "Ошибка валидации"
-// @Failure 401 {object} Response "Ошибка создания заметки"
-// @Failure 422 {object} Response "Неправильный формат данных"
-// @Failure 500 {object} Response "Внутренняя ошибка сервера"
+// @Param body body inputNote true "Data for creating a note"
+// @Success 201 {object} map[string]interface{} "Return id"
+// @Failure 400 {object} Response "Bad Request"
+// @Failure 500 {object} Response "Internal server error"
 // @Router /note/create [post]
 // @Security ApiKeyAuth
 func (h *Handler) noteCreate(w http.ResponseWriter, r *http.Request) {
@@ -52,37 +39,35 @@ func (h *Handler) noteCreate(w http.ResponseWriter, r *http.Request) {
 
 	var note inputNote
 
+	// Decode JSON request body
 	err := render.DecodeJSON(r.Body, &note)
-	if errors.Is(err, io.EOF) {
-		log.Error(errEmptyBody, logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, errEmptyBody)
-		return
-	}
-
 	if err != nil {
-		log.Error(errEmptyBody, logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, errInvalidBody)
+		if errors.Is(err, io.EOF) {
+			log.Error("request body is empty", logger.Err(err))
+			NewErrResponse(w, http.StatusBadRequest, "Request body is empty")
+			return
+		}
+		log.Error("failed to decode request body", logger.Err(err))
+		NewErrResponse(w, http.StatusBadRequest, "Invalid JSON request")
 		return
 	}
 
-	if err := validator.New().Struct(note); err != nil {
-
-		validateErr := err.(validator.ValidationErrors)
-		msg := ErrValidator(validateErr)
-
-		log.Error(msg.ErrMsg, logger.Err(err))
-
-		NewErrResponse(w, http.StatusUnprocessableEntity, msg.ErrMsg)
-		return
-	}
-
+	// Create note
 	id, err := h.services.Note.CreateNote(note.UserId, note.Title, note.Text)
 	if err != nil {
-		NewErrResponse(w, http.StatusInternalServerError, "Create note failed")
+
+		if errors.Is(err, errs.ErrUserNotExists) {
+			log.Error("invalid user id", logger.Err(err))
+			NewErrResponse(w, http.StatusBadRequest, "Invalid user id")
+			return
+		}
+
 		log.Error("Create note failed", logger.Err(err))
+		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
+	// Response
 	response := map[string]interface{}{
 		"id": id,
 	}
@@ -92,74 +77,79 @@ func (h *Handler) noteCreate(w http.ResponseWriter, r *http.Request) {
 
 	if err = json.NewEncoder(w).Encode(response); err != nil {
 		log.Error("Server Error: error encode JSON response", logger.Err(err))
-		NewErrResponse(w, http.StatusInternalServerError, "Server Error")
+		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-	log.Info("Successfully created note", "note", note.Title)
 }
 
-// @Summary List Показать заметки
-// @Description Обрабатывает запрос на отображение заметок.
+// @Summary List Show users notes
+// @Description Handles the request to display notes.
 // @Tags Notes
 // @Accept json
 // @Produce json
-// @Param body body reqUser true "Данные для отображения заметок"
-// @Success 200 {object} map[string]interface{} "Успешный ответ"
-// @Failure 400 {object} Response "Ошибка валидации"
-// @Failure 401 {object} Response "Ошибка создания заметки"
-// @Failure 422 {object} Response "Неправильный формат данных"
-// @Failure 500 {object} Response "Внутренняя ошибка сервера"
-// @Router /note/list [post]
+// @Param userID path int true "User ID"
+// @Success 200 {array} entities.Note
+// @Failure 400 {object} Response "Bad request"
+// @Failure 404 {object} Response "Note not found"
+// @Failure 500 {object} Response "Internal server error"
+// @Router /note/list/{userID} [get]
 // @Security ApiKeyAuth
 func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.notesList"
 	log := h.Logs.With(slog.String("operation", op))
 
-	var user reqUser
-
-	err := render.DecodeJSON(r.Body, &user)
-	if errors.Is(err, io.EOF) {
-		log.Error(errEmptyBody, logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, errEmptyBody)
-		return
-	}
+	userID := chi.URLParam(r, "userID")
+	id, err := strconv.Atoi(userID)
 	if err != nil {
-		log.Error(errInvalidBody, logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, errInvalidBody)
+		NewErrResponse(w, http.StatusBadRequest, "Invalid userID")
+		log.Error("Invalid userID", logger.Err(err))
 		return
 	}
 
-	notesList, err := h.services.Note.NotesList(user.ID)
+	notesList, err := h.services.Note.NotesList(id)
 	if err != nil {
-		NewErrResponse(w, http.StatusBadRequest, "Getting notes list failed")
+		if errors.Is(err, errs.ErrUserNotExists) {
+			log.Error("Invalid user id", logger.Err(err))
+			NewErrResponse(w, http.StatusNotFound, "User does not exist")
+			return
+		}
+
+		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		log.Error("Getting notes list failed", logger.Err(err))
 		return
 	}
 
-	response := map[string]interface{}{
-		"notes": notesList,
-	}
-
 	w.Header().Set("Content-Type", "application/json")
-	if err = json.NewEncoder(w).Encode(response); err != nil {
-		log.Error("Server Error: error encode JSON response", logger.Err(err))
-		NewErrResponse(w, http.StatusInternalServerError, "Server Error")
+
+	if len(notesList) == 0 {
+		response := map[string]interface{}{
+			"Response": fmt.Sprintf("User %d does not have notes", id),
+		}
+		if err = json.NewEncoder(w).Encode(response); err != nil {
+			log.Error("Server Error: error encoding JSON response", logger.Err(err))
+			NewErrResponse(w, http.StatusInternalServerError, "Intermal server Error")
+			return
+		}
 		return
 	}
-	log.Info("Notes list successfully sent to user", "userID", user.ID)
+
+	if err = json.NewEncoder(w).Encode(notesList); err != nil {
+		log.Error("Server Error: error encoding JSON response", logger.Err(err))
+		NewErrResponse(w, http.StatusInternalServerError, "Intermal server Error")
+		return
+	}
 }
 
-// @Summary Update Обновить заметку
-// @Description Обрабатывает запрос на обновлние заметоки.
+// @Summary Update the note
+// @Description Handles the request to update a note.
 // @Tags Notes
 // @Accept json
 // @Produce json
-// @Param body body entities.Note true "Данные для обновления заметки"
-// @Success 200 {object} map[string]interface{} "Успешный ответ"
-// @Failure 400 {object} Response "Ошибка валидации"
-// @Failure 401 {object} Response "Ошибка создания заметки"
-// @Failure 422 {object} Response "Неправильный формат данных"
-// @Failure 500 {object} Response "Внутренняя ошибка сервера"
+// @Param body body entities.Note true "Data for updating the note"
+// @Success 200 {object} map[string]interface{} "Successfully updated note"
+// @Failure 400 {object} Response "Bad request"
+// @Failure 404 {object} Response "Note not found"
+// @Failure 500 {object} Response "Internal server error"
 // @Router /note/update [put]
 // @Security ApiKeyAuth
 func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
@@ -168,22 +158,29 @@ func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 
 	var note entities.Note
 
+	// Decode JSON request body
 	err := render.DecodeJSON(r.Body, &note)
-	if errors.Is(err, io.EOF) {
-		log.Error("request body is empty", logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, "Request body is empty")
-		return
-	}
 	if err != nil {
-		log.Error("failed to decode request body", logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, "Failed to decode request")
+		if errors.Is(err, io.EOF) {
+			log.Error("Request body is empty", logger.Err(err))
+			NewErrResponse(w, http.StatusBadRequest, "Request body is empty")
+			return
+		}
+		log.Error("Failed to decode request body", logger.Err(err))
+		NewErrResponse(w, http.StatusBadRequest, "Invalid JSON request")
 		return
 	}
 
 	err = h.services.Note.UpdateNote(note)
 	if err != nil {
-		NewErrResponse(w, http.StatusBadRequest, "Update note failed")
-		log.Error("Update note failed", logger.Err(err))
+		if errors.Is(err, errs.ErrNoteNotExists) {
+			log.Error("Note does not exist", logger.Err(err))
+			NewErrResponse(w, http.StatusNotFound, "Note does not exist")
+			return
+		}
+
+		log.Error("Failed to update note", logger.Err(err))
+		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
@@ -193,60 +190,58 @@ func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(response); err != nil {
-		log.Error("Server Error: error encode JSON response", logger.Err(err))
-		NewErrResponse(w, http.StatusInternalServerError, "Server Error")
+		log.Error("Server Error: error encoding JSON response", logger.Err(err))
+		NewErrResponse(w, http.StatusInternalServerError, "Intermal server Error")
 		return
 	}
-	log.Info("Notes successfully update", "noteID", note.Id)
 }
 
-// @Summary delete Удалить заметку
-// @Description Обрабатывает запрос на удаление заметок.
+// @Summary Delete the note
+// @Description Handles the request to delete a note.
 // @Tags Notes
 // @Accept json
 // @Produce json
-// @Param body body reqNote true "Данные для удаления заметки"
-// @Success 200 {object} map[string]interface{} "Успешный ответ"
-// @Failure 400 {object} Response "Ошибка валидации"
-// @Failure 401 {object} Response "Ошибка создания заметки"
-// @Failure 422 {object} Response "Неправильный формат данных"
-// @Failure 500 {object} Response "Внутренняя ошибка сервера"
-// @Router /note/delete [delete]
+// @Param noteID path int true "Note ID"
+// @Success 200 {object} map[string]interface{} "Successful response"
+// @Failure 400 {object} Response "Bad request"
+// @Failure 404 {object} Response "Note not found"
+// @Failure 500 {object} Response "Internal server error"
+// @Router /note/delete/{noteID} [delete]
 // @Security ApiKeyAuth
 func (h *Handler) noteDelete(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.noteDelete"
 	log := h.Logs.With(slog.String("operation", op))
 
-	var note reqNote
-
-	err := render.DecodeJSON(r.Body, &note)
-	if errors.Is(err, io.EOF) {
-		log.Error("request body is empty", logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, "Request body is empty")
-		return
-	}
+	noteID := chi.URLParam(r, "noteID")
+	id, err := strconv.Atoi(noteID)
 	if err != nil {
-		log.Error("failed to decode request body", logger.Err(err))
-		NewErrResponse(w, http.StatusUnprocessableEntity, "Failed to decode request")
+		NewErrResponse(w, http.StatusBadRequest, "Invalid noteID")
+		log.Error("Invalid noteID", logger.Err(err))
 		return
 	}
 
-	err = h.services.Note.DeleteNote(note.ID)
+	err = h.services.Note.DeleteNote(id)
+
 	if err != nil {
-		NewErrResponse(w, http.StatusBadRequest, "Delete note failed")
+		if errors.Is(err, errs.ErrNoteNotExists) {
+			log.Error("Note does not exist", logger.Err(err))
+			NewErrResponse(w, http.StatusNotFound, "Note does not exist")
+			return
+		}
+
 		log.Error("Delete note failed", logger.Err(err))
+		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
 
 	response := map[string]interface{}{
-		"Response": "Note successfully delete",
+		"Response": "Note successfully deleted",
 	}
 
 	w.Header().Set("Content-Type", "application/json")
 	if err = json.NewEncoder(w).Encode(response); err != nil {
-		log.Error("Server Error: error encode JSON response", logger.Err(err))
-		NewErrResponse(w, http.StatusInternalServerError, "Server Error")
+		log.Error("Server Error: error encoding JSON response", logger.Err(err))
+		NewErrResponse(w, http.StatusInternalServerError, "Internal Server Error")
 		return
 	}
-	log.Info("Note successfully delete", "noteID", note.ID)
 }
