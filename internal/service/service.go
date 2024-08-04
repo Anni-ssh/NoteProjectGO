@@ -10,8 +10,8 @@ import (
 //go:generate mockgen -source=service.go -destination=mocks/mock.go
 
 type Authorization interface {
-	CreateUser(user entities.User) (int, error)
-	CheckUser(username, password string) (entities.User, error)
+	CreateUser(ctx context.Context, user entities.User) (int, error)
+	CheckUser(ctx context.Context, username, password string) (entities.User, error)
 	GenToken(user entities.User) (string, error)
 	ParseToken(accessToken string) (int, error)
 }
@@ -22,10 +22,10 @@ type Session interface {
 }
 
 type Note interface {
-	CreateNote(userID int, title, text string) (int, error)
-	NotesList(userID int) ([]entities.Note, error)
-	UpdateNote(note entities.Note) error
-	DeleteNote(noteID int) error
+	CreateNote(ctx context.Context, userID int, title, text string) (int, error)
+	NotesList(ctx context.Context, userID int) ([]entities.Note, error)
+	UpdateNote(ctx context.Context, note entities.Note) error
+	DeleteNote(ctx context.Context, noteID int) error
 }
 
 type Service struct {

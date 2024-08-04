@@ -3,6 +3,7 @@ package postgres
 import (
 	"NoteProject/internal/entities"
 	"NoteProject/internal/errs"
+	"context"
 	"database/sql"
 	"errors"
 	"fmt"
@@ -18,61 +19,57 @@ func NewAuthPostgres(db *sql.DB) *AuthPostgres {
 	return &AuthPostgres{db: db}
 }
 
-func (s *AuthPostgres) CreateUser(user entities.User) (int, error) {
+// CreateUser создает нового пользователя.
+func (s *AuthPostgres) CreateUser(ctx context.Context, user entities.User) (int, error) {
 	const operation = "postgres.CreateUser"
-	q, err := s.db.Prepare("INSERT INTO users(name, password_hash) VALUES($1, $2) RETURNING id")
 
+	// Подготовка SQL-запроса
+	q, err := s.db.PrepareContext(ctx, "INSERT INTO users(name, password_hash) VALUES($1, $2) RETURNING id")
 	if err != nil {
-		return 0, fmt.Errorf("%s Prepare: %w", operation, err)
+		return 0, fmt.Errorf("%s: Prepare failed: %w", operation, err)
 	}
 
 	var id int
 
-	err = q.QueryRow(user.Username, user.Password).Scan(&id)
-
+	// Выполнение запроса
+	err = q.QueryRowContext(ctx, user.Username, user.Password).Scan(&id)
 	if err != nil {
 		var pgErr *pq.Error
-		ok := errors.As(err, &pgErr)
-		if !ok {
-			return 0, fmt.Errorf("%s Scan: %w", operation, err)
+		if errors.As(err, &pgErr) {
+			// Проверка на ошибку уникальности значения
+			if pgErr.Code.Name() == "unique_violation" {
+				return 0, fmt.Errorf("%s: user with username %s already exists: %w", operation, user.Username, errs.ErrUserExists)
+			}
+			return 0, fmt.Errorf("%s: PostgreSQL error: %s", operation, pgErr.Message)
 		}
-		// Проверка ошибки уникальность значения
-		if pgErr.Code.Name() == "unique_violation" {
-			return 0, fmt.Errorf("%s: %w", operation, errs.ErrUserExists)
-		}
-		return 0, fmt.Errorf("%s Scan: %w", operation, err)
+		return 0, fmt.Errorf("%s: Scan failed: %w", operation, err)
 	}
 
 	return id, nil
 }
 
-func (s *AuthPostgres) CheckUser(username, password string) (entities.User, error) {
+// CheckUser проверяет существование пользователя.
+func (s *AuthPostgres) CheckUser(ctx context.Context, username, password string) (entities.User, error) {
 	const op = "postgres.CheckUser"
 
 	var user entities.User
 
-	q, err := s.db.Prepare("SELECT * FROM users WHERE name = $1 AND password_hash = $2")
+	// Подготовка SQL-запроса
+	q, err := s.db.PrepareContext(ctx, "SELECT * FROM users WHERE name = $1 AND password_hash = $2")
 	if err != nil {
-		return user, fmt.Errorf("%s Prepare: %w", op, err)
+		return user, fmt.Errorf("%s: Prepare failed: %w", op, err)
 	}
 
-	rows, err := q.Query(username, password)
+	// Выполнение запроса
+	row := q.QueryRowContext(ctx, username, password)
+
+	// Чтение результатов
+	err = row.Scan(&user.Id, &user.Username, &user.Password)
 	if err != nil {
 		if errors.Is(err, sql.ErrNoRows) {
 			return user, fmt.Errorf("%s: %w", op, errs.ErrUserNotExists)
 		}
-		return user, fmt.Errorf("%s Query: %w", op, err)
-	}
-
-	for rows.Next() {
-		err = rows.Scan(&user.Id, &user.Username, &user.Password)
-		if err != nil {
-			return user, fmt.Errorf("%s Scan: %w", op, err)
-		}
-	}
-
-	if err = rows.Err(); err != nil {
-		return user, fmt.Errorf("%s rows iteration error: %w", op, err)
+		return user, fmt.Errorf("%s: Scan failed: %w", op, err)
 	}
 
 	return user, nil

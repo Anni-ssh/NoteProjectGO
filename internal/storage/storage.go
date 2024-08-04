@@ -15,8 +15,8 @@ import (
 //go:generate mockgen -source=storage.go -destination=mocks/mock.go
 
 type Authorization interface {
-	CreateUser(user entities.User) (int, error)
-	CheckUser(username string, password string) (entities.User, error)
+	CreateUser(ctx context.Context, user entities.User) (int, error)
+	CheckUser(ctx context.Context, username string, password string) (entities.User, error)
 }
 type Session interface {
 	CreateSession(ctx context.Context, userID, token string, expiration time.Duration) error
@@ -24,10 +24,10 @@ type Session interface {
 }
 
 type NoteManage interface {
-	CreateNote(userID int, title, text string) (int, error)
-	NotesList(userID int) ([]entities.Note, error)
-	UpdateNote(note entities.Note) error
-	DeleteNote(noteID int) error
+	CreateNote(ctx context.Context, userID int, title, text string) (int, error)
+	NotesList(ctx context.Context, userID int) ([]entities.Note, error)
+	UpdateNote(ctx context.Context, note entities.Note) error
+	DeleteNote(ctx context.Context, noteID int) error
 }
 
 type Storage struct {

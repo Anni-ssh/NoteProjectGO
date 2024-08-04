@@ -3,6 +3,7 @@ package postgres
 import (
 	"NoteProject/internal/entities"
 	"NoteProject/internal/errs"
+	"context"
 	"database/sql"
 	"fmt"
 )
@@ -15,148 +16,170 @@ func NewNoteManage(db *sql.DB) *NoteManagePostgres {
 	return &NoteManagePostgres{db: db}
 }
 
-func (n *NoteManagePostgres) CreateNote(userID int, title, text string) (int, error) {
+// CreateNote создает новую заметку для пользоватля по его ID.
+func (n *NoteManagePostgres) CreateNote(ctx context.Context, userID int, title, text string) (int, error) {
 	const op = "postgres.CreateNote"
 
 	// Начало транзакции
-	tx, err := n.db.Begin()
+	tx, err := n.db.BeginTx(ctx, nil)
 	if err != nil {
-		return 0, fmt.Errorf("database error: %w, operation: %s", err, op)
+		return 0, fmt.Errorf("%s: BeginTx failed: %w", op, err)
 	}
 
 	// Проверка существования пользователя
 	var userExists bool
-	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1)", userID).Scan(&userExists)
+	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", userID).Scan(&userExists)
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("%s check user exists: %w", op, err)
+		return 0, fmt.Errorf("%s: Check user exists failed: %w", op, err)
 	}
 	if !userExists {
 		tx.Rollback()
-		return 0, fmt.Errorf("%s: %w", op, errs.ErrUserNotExists)
+		return 0, fmt.Errorf("%s: User does not exist: %w", op, errs.ErrUserNotExists)
 	}
 
-	stmt, err := tx.Prepare("INSERT INTO notes (user_id, title, text) VALUES($1, $2, $3) RETURNING id")
+	// Подготовка SQL-запроса
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO notes (id, title, text) VALUES($1, $2, $3) RETURNING id")
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("%s Prepare: %w", op, err)
+		return 0, fmt.Errorf("%s: Prepare failed: %w", op, err)
 	}
 
 	var id int
-	err = stmt.QueryRow(userID, title, text).Scan(&id)
+	// Добавление заметки
+	err = stmt.QueryRowContext(ctx, userID, title, text).Scan(&id)
 	if err != nil {
 		tx.Rollback()
-		return 0, fmt.Errorf("%s Insert: %w", op, err)
+		return 0, fmt.Errorf("%s: Insert failed: %w", op, err)
 	}
 
 	// Коммит транзакции
 	if err := tx.Commit(); err != nil {
-		return 0, fmt.Errorf("%s Commit: %w", op, err)
+		return 0, fmt.Errorf("%s: Commit failed: %w", op, err)
 	}
 
 	return id, nil
 }
 
-func (n *NoteManagePostgres) NotesList(userID int) ([]entities.Note, error) {
+// NotesList возвращает список заметок по ID пользователя.
+func (n *NoteManagePostgres) NotesList(ctx context.Context, userID int) ([]entities.Note, error) {
 	const op = "postgres.NotesList"
 
-	// Проверка наличия пользователя
-	// Позволяет корректно отличить отсутстивие заметок и отсутствие пользователя
 	// Начало транзакции
-	tx, err := n.db.Begin()
+	tx, err := n.db.BeginTx(ctx, nil)
 	if err != nil {
-		return nil, fmt.Errorf("database error: %w, operation: %s", err, op)
+		return nil, fmt.Errorf("%s: BeginTx failed: %w", op, err)
 	}
 
-	// Провека наличия пользователя
+	// Проверка наличия пользователя
 	var userExists bool
-	err = tx.QueryRow("SELECT EXISTS(SELECT 1 FROM users WHERE user_id = $1)", userID).Scan(&userExists)
+	err = tx.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM users WHERE id = $1)", userID).Scan(&userExists)
 	if err != nil {
-		return nil, fmt.Errorf("%s check user exists: %w", op, err)
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: Check user exists failed: %w", op, err)
 	}
 	if !userExists {
-		return nil, fmt.Errorf("%s: %w", op, errs.ErrUserNotExists)
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: User does not exist: %w", op, errs.ErrUserNotExists)
 	}
 
-	// Подготвка и исполнение запроса
-	q, err := tx.Prepare("SELECT * FROM notes WHERE user_id = $1")
+	// Подготовка SQL-запроса
+	q, err := tx.PrepareContext(ctx, "SELECT * FROM notes WHERE id = $1")
 	if err != nil {
-		return nil, fmt.Errorf("%s Prepare: %w", op, err)
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: Prepare failed: %w", op, err)
 	}
 
-	rows, err := q.Query(userID)
+	// Выполнение запроса
+	rows, err := q.QueryContext(ctx, userID)
 	if err != nil {
-		return nil, fmt.Errorf("%s Query: %w", op, err)
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: Query failed: %w", op, err)
 	}
 
+	// Чтение результатов
 	var notes []entities.Note
 	for rows.Next() {
 		var note entities.Note
 		err := rows.Scan(&note.Id, &note.UserId, &note.Title, &note.Text, &note.Date, &note.Done)
 		if err != nil {
-			return nil, fmt.Errorf("%s Scan: %w", op, err)
+			tx.Rollback()
+			return nil, fmt.Errorf("%s: Scan failed: %w", op, err)
 		}
 		notes = append(notes, note)
 	}
 
-	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("%s Rows: %w", op, err)
+	// Проверка наличия ошибок
+	if err = rows.Err(); err != nil {
+		tx.Rollback()
+		return nil, fmt.Errorf("%s: Rows iteration error: %w", op, err)
 	}
 
 	// Коммит
 	if err := tx.Commit(); err != nil {
-		return nil, fmt.Errorf("%s Commit: %w", op, err)
+		return nil, fmt.Errorf("%s: Commit failed: %w", op, err)
 	}
 
 	return notes, nil
 }
 
-func (n *NoteManagePostgres) UpdateNote(note entities.Note) error {
+// UpdateNote обновляет заметку по ID, который указан в entities.Note
+func (n *NoteManagePostgres) UpdateNote(ctx context.Context, note entities.Note) error {
 	const operation = "postgres.UpdateNote"
 
-	stmt, err := n.db.Prepare("UPDATE notes SET title = $1, text = $2, done = $3 WHERE id = $4")
+	// Подготовка SQL-запроса
+	stmt, err := n.db.PrepareContext(ctx, "UPDATE notes SET title = $1, text = $2, done = $3 WHERE id = $4")
 	if err != nil {
-		return fmt.Errorf("%s Prepare: %w", operation, err)
+		return fmt.Errorf("%s: Prepare failed: %w", operation, err)
 	}
 
-	result, err := stmt.Exec(note.Title, note.Text, note.Done, note.Id)
+	// Выполнение SQL-запроса
+	// Не выполняется проверка наличия заметки т.к. ExecContext вернёт кол-во затронутых row.
+	result, err := stmt.ExecContext(ctx, note.Title, note.Text, note.Done, note.Id)
 	if err != nil {
-		return fmt.Errorf("%s Exec: %w", operation, err)
+		return fmt.Errorf("%s: Exec failed: %w", operation, err)
 	}
 
+	// Получение количества затронутых строк
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("%s RowsAffected: %w", operation, err)
+		return fmt.Errorf("%s: RowsAffected failed: %w", operation, err)
 	}
 
-	// Если кол-во записей 0, то такой заметки нет
+	// Если количество затронутых строк 0, то заметка не найдена
 	if rowsAffected == 0 {
-		return fmt.Errorf("%s no rows were updated: %w", operation, errs.ErrNoteNotExists)
+		return fmt.Errorf("%s: No rows were updated: %w", operation, errs.ErrNoteNotExists)
 	}
 
 	return nil
 }
 
-func (n *NoteManagePostgres) DeleteNote(noteID int) error {
+// DeleteNote удаляет заметку по её ID.
+func (n *NoteManagePostgres) DeleteNote(ctx context.Context, noteID int) error {
 	const operation = "postgres.DeleteNote"
-	q, err := n.db.Prepare("DELETE FROM notes WHERE id = $1")
+
+	// Подготовка SQL-запроса
+	q, err := n.db.PrepareContext(ctx, "DELETE FROM notes WHERE id = $1")
 	if err != nil {
-		return fmt.Errorf("%s Prepare: %w", operation, err)
+		return fmt.Errorf("%s: PrepareContext failed: %w", operation, err)
 	}
 
-	result, err := q.Exec(noteID)
+	// Выполнение SQL-запроса
+	result, err := q.ExecContext(ctx, noteID)
 	if err != nil {
-		return fmt.Errorf("%s Exec: %w", operation, err)
+		return fmt.Errorf("%s: ExecContext failed: %w", operation, err)
 	}
 
+	// Получение затронутых строк
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("%s Affected: %w", operation, err)
+		return fmt.Errorf("%s: RowsAffected failed: %w", operation, err)
 	}
 
+	// Если количество затронутых строк 0, то заметка не найдена
 	if rowsAffected == 0 {
 		return errs.ErrNoteNotExists
-	} else {
-		return nil
 	}
+
+	return nil
 }

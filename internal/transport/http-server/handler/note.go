@@ -4,6 +4,7 @@ import (
 	"NoteProject/internal/entities"
 	"NoteProject/internal/errs"
 	"NoteProject/pkg/logger"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"log/slog"
 	"net/http"
 	"strconv"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/render"
@@ -52,8 +54,12 @@ func (h *Handler) noteCreate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Context
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	// Create note
-	id, err := h.services.Note.CreateNote(note.UserId, note.Title, note.Text)
+	id, err := h.services.Note.CreateNote(ctx, note.UserId, note.Title, note.Text)
 	if err != nil {
 
 		if errors.Is(err, errs.ErrUserNotExists) {
@@ -98,6 +104,7 @@ func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.notesList"
 	log := h.Logs.With(slog.String("operation", op))
 
+	// Извлеченеи userID
 	userID := chi.URLParam(r, "userID")
 	id, err := strconv.Atoi(userID)
 	if err != nil {
@@ -106,7 +113,12 @@ func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	notesList, err := h.services.Note.NotesList(id)
+	// Context
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	// Запрос в БД
+	notesList, err := h.services.Note.NotesList(ctx, id)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotExists) {
 			log.Error("Invalid user id", logger.Err(err))
@@ -118,9 +130,10 @@ func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 		log.Error("Getting notes list failed", logger.Err(err))
 		return
 	}
-
+	// Подготовка заголовка
 	w.Header().Set("Content-Type", "application/json")
 
+	// Проверка ошибок
 	if len(notesList) == 0 {
 		response := map[string]interface{}{
 			"Response": fmt.Sprintf("User %d does not have notes", id),
@@ -132,7 +145,7 @@ func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 		}
 		return
 	}
-
+	// Ответ клиенту
 	if err = json.NewEncoder(w).Encode(notesList); err != nil {
 		log.Error("Server Error: error encoding JSON response", logger.Err(err))
 		NewErrResponse(w, http.StatusInternalServerError, "Intermal server Error")
@@ -171,7 +184,12 @@ func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.services.Note.UpdateNote(note)
+	// Context
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
+	// Запрос в БД
+	err = h.services.Note.UpdateNote(ctx, note)
 	if err != nil {
 		if errors.Is(err, errs.ErrNoteNotExists) {
 			log.Error("Note does not exist", logger.Err(err))
@@ -183,7 +201,7 @@ func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
-
+	// Ответ клиенту
 	response := map[string]interface{}{
 		"Response": "Successfully updated note",
 	}
@@ -212,6 +230,7 @@ func (h *Handler) noteDelete(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.noteDelete"
 	log := h.Logs.With(slog.String("operation", op))
 
+	// Извлеченеи noteID
 	noteID := chi.URLParam(r, "noteID")
 	id, err := strconv.Atoi(noteID)
 	if err != nil {
@@ -220,8 +239,14 @@ func (h *Handler) noteDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err = h.services.Note.DeleteNote(id)
+	// Context
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
+	// Запрос в БД
+	err = h.services.Note.DeleteNote(ctx, id)
+
+	// Проверка ошибок
 	if err != nil {
 		if errors.Is(err, errs.ErrNoteNotExists) {
 			log.Error("Note does not exist", logger.Err(err))
@@ -234,6 +259,7 @@ func (h *Handler) noteDelete(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Ответ клиенту
 	response := map[string]interface{}{
 		"Response": "Note successfully deleted",
 	}

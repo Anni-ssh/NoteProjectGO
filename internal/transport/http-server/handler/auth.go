@@ -4,6 +4,7 @@ import (
 	"NoteProject/internal/entities"
 	"NoteProject/internal/errs"
 	"NoteProject/pkg/logger"
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
@@ -66,9 +67,12 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 		NewErrResponse(w, http.StatusBadRequest, "Invalid data")
 		return
 	}
+	// Context
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
 
 	// Create user
-	id, err := h.services.Authorization.CreateUser(user)
+	id, err := h.services.Authorization.CreateUser(ctx, user)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserExists) {
 			log.Error("Create user failed: user already exists", logger.Err(err))
@@ -80,6 +84,9 @@ func (h *Handler) signUp(w http.ResponseWriter, r *http.Request) {
 		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
+
+	// Уведомление о регистрации пользователя
+	log.Info("Sucsessful registration", "User", user.Username)
 
 	// Prepare and send response
 	response := map[string]interface{}{
@@ -139,8 +146,12 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Context
+	ctx, cancel := context.WithTimeout(r.Context(), 5*time.Second)
+	defer cancel()
+
 	// Check user
-	regUser, err := h.services.Authorization.CheckUser(user.Username, user.Password)
+	regUser, err := h.services.Authorization.CheckUser(ctx, user.Username, user.Password)
 	if err != nil {
 		if errors.Is(err, errs.ErrUserNotExists) {
 			log.Error("invalid user credentials", logger.Err(err))
@@ -168,6 +179,9 @@ func (h *Handler) signIn(w http.ResponseWriter, r *http.Request) {
 		NewErrResponse(w, http.StatusInternalServerError, "Internal server error")
 		return
 	}
+
+	// Уведомление о входе пользователя
+	log.Info("Sucsessful login", "User", user.Username)
 
 	// Set authorization header and respond
 	w.Header().Set("Authorization", "Bearer "+token)

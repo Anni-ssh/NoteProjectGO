@@ -6,7 +6,9 @@ package mock_storage
 
 import (
 	entities "NoteProject/internal/entities"
+	context "context"
 	reflect "reflect"
+	time "time"
 
 	gomock "github.com/golang/mock/gomock"
 )
@@ -35,33 +37,33 @@ func (m *MockAuthorization) EXPECT() *MockAuthorizationMockRecorder {
 }
 
 // CheckUser mocks base method.
-func (m *MockAuthorization) CheckUser(username, password string) (*entities.User, error) {
+func (m *MockAuthorization) CheckUser(ctx context.Context, username, password string) (entities.User, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckUser", username, password)
-	ret0, _ := ret[0].(*entities.User)
+	ret := m.ctrl.Call(m, "CheckUser", ctx, username, password)
+	ret0, _ := ret[0].(entities.User)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CheckUser indicates an expected call of CheckUser.
-func (mr *MockAuthorizationMockRecorder) CheckUser(username, password interface{}) *gomock.Call {
+func (mr *MockAuthorizationMockRecorder) CheckUser(ctx, username, password interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUser", reflect.TypeOf((*MockAuthorization)(nil).CheckUser), username, password)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckUser", reflect.TypeOf((*MockAuthorization)(nil).CheckUser), ctx, username, password)
 }
 
 // CreateUser mocks base method.
-func (m *MockAuthorization) CreateUser(user entities.User) (int, error) {
+func (m *MockAuthorization) CreateUser(ctx context.Context, user entities.User) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateUser", user)
+	ret := m.ctrl.Call(m, "CreateUser", ctx, user)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateUser indicates an expected call of CreateUser.
-func (mr *MockAuthorizationMockRecorder) CreateUser(user interface{}) *gomock.Call {
+func (mr *MockAuthorizationMockRecorder) CreateUser(ctx, user interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockAuthorization)(nil).CreateUser), user)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateUser", reflect.TypeOf((*MockAuthorization)(nil).CreateUser), ctx, user)
 }
 
 // MockSession is a mock of Session interface.
@@ -88,31 +90,31 @@ func (m *MockSession) EXPECT() *MockSessionMockRecorder {
 }
 
 // CheckSession mocks base method.
-func (m *MockSession) CheckSession(userID, token string) error {
+func (m *MockSession) CheckSession(ctx context.Context, userID, token string) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CheckSession", userID, token)
+	ret := m.ctrl.Call(m, "CheckSession", ctx, userID, token)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CheckSession indicates an expected call of CheckSession.
-func (mr *MockSessionMockRecorder) CheckSession(userID, token interface{}) *gomock.Call {
+func (mr *MockSessionMockRecorder) CheckSession(ctx, userID, token interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckSession", reflect.TypeOf((*MockSession)(nil).CheckSession), userID, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CheckSession", reflect.TypeOf((*MockSession)(nil).CheckSession), ctx, userID, token)
 }
 
 // CreateSession mocks base method.
-func (m *MockSession) CreateSession(userID, token string) error {
+func (m *MockSession) CreateSession(ctx context.Context, userID, token string, expiration time.Duration) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateSession", userID, token)
+	ret := m.ctrl.Call(m, "CreateSession", ctx, userID, token, expiration)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // CreateSession indicates an expected call of CreateSession.
-func (mr *MockSessionMockRecorder) CreateSession(userID, token interface{}) *gomock.Call {
+func (mr *MockSessionMockRecorder) CreateSession(ctx, userID, token, expiration interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSession", reflect.TypeOf((*MockSession)(nil).CreateSession), userID, token)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateSession", reflect.TypeOf((*MockSession)(nil).CreateSession), ctx, userID, token, expiration)
 }
 
 // MockNoteManage is a mock of NoteManage interface.
@@ -139,59 +141,59 @@ func (m *MockNoteManage) EXPECT() *MockNoteManageMockRecorder {
 }
 
 // CreateNote mocks base method.
-func (m *MockNoteManage) CreateNote(userID int, title, text string) (int, error) {
+func (m *MockNoteManage) CreateNote(ctx context.Context, userID int, title, text string) (int, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "CreateNote", userID, title, text)
+	ret := m.ctrl.Call(m, "CreateNote", ctx, userID, title, text)
 	ret0, _ := ret[0].(int)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // CreateNote indicates an expected call of CreateNote.
-func (mr *MockNoteManageMockRecorder) CreateNote(userID, title, text interface{}) *gomock.Call {
+func (mr *MockNoteManageMockRecorder) CreateNote(ctx, userID, title, text interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNote", reflect.TypeOf((*MockNoteManage)(nil).CreateNote), userID, title, text)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "CreateNote", reflect.TypeOf((*MockNoteManage)(nil).CreateNote), ctx, userID, title, text)
 }
 
 // DeleteNote mocks base method.
-func (m *MockNoteManage) DeleteNote(noteID int) error {
+func (m *MockNoteManage) DeleteNote(ctx context.Context, noteID int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DeleteNote", noteID)
+	ret := m.ctrl.Call(m, "DeleteNote", ctx, noteID)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DeleteNote indicates an expected call of DeleteNote.
-func (mr *MockNoteManageMockRecorder) DeleteNote(noteID interface{}) *gomock.Call {
+func (mr *MockNoteManageMockRecorder) DeleteNote(ctx, noteID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNote", reflect.TypeOf((*MockNoteManage)(nil).DeleteNote), noteID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DeleteNote", reflect.TypeOf((*MockNoteManage)(nil).DeleteNote), ctx, noteID)
 }
 
 // NotesList mocks base method.
-func (m *MockNoteManage) NotesList(userID int) ([]entities.Note, error) {
+func (m *MockNoteManage) NotesList(ctx context.Context, userID int) ([]entities.Note, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "NotesList", userID)
+	ret := m.ctrl.Call(m, "NotesList", ctx, userID)
 	ret0, _ := ret[0].([]entities.Note)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // NotesList indicates an expected call of NotesList.
-func (mr *MockNoteManageMockRecorder) NotesList(userID interface{}) *gomock.Call {
+func (mr *MockNoteManageMockRecorder) NotesList(ctx, userID interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotesList", reflect.TypeOf((*MockNoteManage)(nil).NotesList), userID)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "NotesList", reflect.TypeOf((*MockNoteManage)(nil).NotesList), ctx, userID)
 }
 
 // UpdateNote mocks base method.
-func (m *MockNoteManage) UpdateNote(note entities.Note) error {
+func (m *MockNoteManage) UpdateNote(ctx context.Context, note entities.Note) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "UpdateNote", note)
+	ret := m.ctrl.Call(m, "UpdateNote", ctx, note)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // UpdateNote indicates an expected call of UpdateNote.
-func (mr *MockNoteManageMockRecorder) UpdateNote(note interface{}) *gomock.Call {
+func (mr *MockNoteManageMockRecorder) UpdateNote(ctx, note interface{}) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNote", reflect.TypeOf((*MockNoteManage)(nil).UpdateNote), note)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "UpdateNote", reflect.TypeOf((*MockNoteManage)(nil).UpdateNote), ctx, note)
 }

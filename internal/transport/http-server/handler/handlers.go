@@ -3,6 +3,7 @@ package handler
 import (
 	_ "NoteProject/docs"
 	"NoteProject/internal/service"
+	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -37,7 +38,7 @@ func (h *Handler) InitRouter() *chi.Mux {
 	r.Use(middleware.CleanPath) //исправление путей
 
 	c := cors.New(cors.Options{
-		AllowedOrigins: []string{"http://localhost:8080"}, // Разрешаем только запросы с данных домена
+		AllowedOrigins: []string{fmt.Sprintf("http://%s:%s", os.Getenv("SERVER_HOST"), os.Getenv("SERVER_PORT"))}, // Разрешаем только запросы с данных домена
 		AllowedMethods: []string{"GET", "POST", "PUT", "DELETE", "OPTIONS"},
 		AllowedHeaders: []string{"Accept", "Authorization", "Content-Type", "Content-Length", "Cache-Control",
 			"Connection", "Host", "Origin"},
@@ -66,7 +67,7 @@ func (h *Handler) InitRouter() *chi.Mux {
 		r.Use(h.authMiddleware)
 
 		r.Get("/workspace", h.noteWorkspace)
-		r.Post("/list", h.notesList)
+		r.Get("/list", h.notesList)
 		r.Post("/create", h.noteCreate)
 		r.Put("/update", h.noteUpdate)
 		r.Delete("/delete", h.noteDelete)

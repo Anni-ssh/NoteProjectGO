@@ -1,9 +1,12 @@
 package postgres
 
 import (
+	"context"
+	"testing"
+	"time"
+
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/assert"
-	"testing"
 )
 
 func TestCreateNote(T *testing.T) {
@@ -20,6 +23,7 @@ func TestCreateNote(T *testing.T) {
 		title  string
 		text   string
 	}
+
 	type mockBehaviour func(n note, id int)
 
 	testTable := []struct {
@@ -42,7 +46,11 @@ func TestCreateNote(T *testing.T) {
 	for _, tt := range testTable {
 		T.Run(tt.name, func(t *testing.T) {
 			tt.mockBehaviour(tt.note, tt.result)
-			result, err := s.CreateNote(tt.note.userID, tt.note.title, tt.note.text)
+
+			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+
+			result, err := s.CreateNote(ctx, tt.note.userID, tt.note.title, tt.note.text)
 			if err != nil {
 				assert.Error(t, err)
 			} else {

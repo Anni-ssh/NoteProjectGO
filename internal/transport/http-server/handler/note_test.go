@@ -4,10 +4,12 @@ import (
 	service2 "NoteProject/internal/service"
 	mock_service "NoteProject/internal/service/mocks"
 	"NoteProject/pkg/logger"
+	"context"
 	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/go-chi/chi/v5"
 	"github.com/golang/mock/gomock"
@@ -16,6 +18,9 @@ import (
 
 func TestHandler_create(t *testing.T) {
 	type mockBehavior func(s *mock_service.MockNote, note inputNote)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
 
 	testTable := []struct {
 		name                 string
@@ -33,7 +38,7 @@ func TestHandler_create(t *testing.T) {
 				Text:   "Test save",
 			},
 			mockBehavior: func(s *mock_service.MockNote, note inputNote) {
-				s.EXPECT().CreateNote(note.UserId, note.Title, note.Text).Return(1, nil)
+				s.EXPECT().CreateNote(ctx, note.UserId, note.Title, note.Text).Return(1, nil)
 
 			},
 			expectedStatusCode:   201,
