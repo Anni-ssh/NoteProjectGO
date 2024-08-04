@@ -11,7 +11,7 @@ import (
 
 type Authorization interface {
 	CreateUser(user entities.User) (int, error)
-	CheckUser(username, password string) (*entities.User, error)
+	CheckUser(username, password string) (entities.User, error)
 	GenToken(user entities.User) (string, error)
 	ParseToken(accessToken string) (int, error)
 }

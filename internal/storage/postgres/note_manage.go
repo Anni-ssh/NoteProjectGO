@@ -2,10 +2,9 @@ package postgres
 
 import (
 	"NoteProject/internal/entities"
+	"NoteProject/internal/errs"
 	"database/sql"
-	"errors"
 	"fmt"
-	"github.com/lib/pq"
 )
 
 type NoteManagePostgres struct {
@@ -40,22 +39,12 @@ func (n *NoteManagePostgres) NotesList(userID int) ([]entities.Note, error) {
 		return nil, fmt.Errorf("%s Prepare: %w", operation, err)
 	}
 
-	var notes []entities.Note
-
 	rows, err := q.Query(userID)
 	if err != nil {
-		var pgErr *pq.Error
-		ok := errors.As(err, &pgErr)
-		if !ok {
-			return nil, fmt.Errorf("%s Query: %w", operation, err)
-		}
-
-		if pgErr.Code.Name() == uniqueViolationCode {
-			return nil, errNoteNotFound
-		}
-
 		return nil, fmt.Errorf("%s Query: %w", operation, err)
 	}
+
+	var notes []entities.Note
 
 	for rows.Next() {
 		var note entities.Note
@@ -92,7 +81,7 @@ func (n *NoteManagePostgres) DeleteNote(noteID int) error {
 	}
 
 	if rowsAffected == 0 {
-		return errNoteNotFound
+		return errs.ErrNoteNotFound
 	} else {
 		return nil
 	}
@@ -113,12 +102,12 @@ func (n *NoteManagePostgres) UpdateNote(note entities.Note) error {
 
 	rowsAffected, err := result.RowsAffected()
 	if err != nil {
-		return fmt.Errorf("%s Affected: %w", operation, err)
+		return fmt.Errorf("%s RowsAffected: %w", operation, err)
 	}
 
 	if rowsAffected == 0 {
-		return fmt.Errorf("%s values are not included in the table: %w", operation, err)
-	} else {
-		return nil
+		return fmt.Errorf("%s no rows were updated: %w", operation, errs.ErrNoteNotFound)
 	}
+
+	return nil
 }

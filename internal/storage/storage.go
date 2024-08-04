@@ -6,16 +6,17 @@ import (
 	"NoteProject/internal/storage/redisDB"
 	"context"
 	"database/sql"
+	"time"
+
 	_ "github.com/lib/pq"
 	"github.com/redis/go-redis/v9"
-	"time"
 )
 
 //go:generate mockgen -source=storage.go -destination=mocks/mock.go
 
 type Authorization interface {
 	CreateUser(user entities.User) (int, error)
-	CheckUser(username string, password string) (*entities.User, error)
+	CheckUser(username string, password string) (entities.User, error)
 }
 type Session interface {
 	CreateSession(ctx context.Context, userID, token string, expiration time.Duration) error

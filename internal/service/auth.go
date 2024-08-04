@@ -6,8 +6,9 @@ import (
 	"crypto/sha256"
 	"errors"
 	"fmt"
-	"github.com/dgrijalva/jwt-go"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
 )
 
 //go:generate mockgen -source=auth.go -destination=mocks/mock.go
@@ -29,7 +30,7 @@ func (s *AuthService) CreateUser(user entities.User) (int, error) {
 	return s.storage.CreateUser(user)
 }
 
-func (s *AuthService) CheckUser(username, password string) (*entities.User, error) {
+func (s *AuthService) CheckUser(username, password string) (entities.User, error) {
 	return s.storage.CheckUser(username, genPasswordHash(password))
 }
 
