@@ -33,7 +33,7 @@ type inputNote struct {
 // @Success 201 {object} map[string]interface{} "Return id"
 // @Failure 400 {object} Response "Bad Request"
 // @Failure 500 {object} Response "Internal server error"
-// @Router /note/create [post]
+// @Router /notes [post]
 // @Security ApiKeyAuth
 func (h *Handler) noteCreate(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.noteCreate"
@@ -98,7 +98,7 @@ func (h *Handler) noteCreate(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} Response "Bad request"
 // @Failure 404 {object} Response "Note not found"
 // @Failure 500 {object} Response "Internal server error"
-// @Router /note/list/{userID} [get]
+// @Router /notes/{userID} [get]
 // @Security ApiKeyAuth
 func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.notesList"
@@ -163,7 +163,7 @@ func (h *Handler) notesList(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} Response "Bad request"
 // @Failure 404 {object} Response "Note not found"
 // @Failure 500 {object} Response "Internal server error"
-// @Router /note/update [put]
+// @Router /notes [put]
 // @Security ApiKeyAuth
 func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.noteUpdate"
@@ -224,7 +224,7 @@ func (h *Handler) noteUpdate(w http.ResponseWriter, r *http.Request) {
 // @Failure 400 {object} Response "Bad request"
 // @Failure 404 {object} Response "Note not found"
 // @Failure 500 {object} Response "Internal server error"
-// @Router /note/delete/{noteID} [delete]
+// @Router /notes/{noteID} [delete]
 // @Security ApiKeyAuth
 func (h *Handler) noteDelete(w http.ResponseWriter, r *http.Request) {
 	const op = "handler.noteDelete"

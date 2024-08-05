@@ -120,7 +120,63 @@ const docTemplate = `{
                 }
             }
         },
-        "/note/create": {
+        "/notes": {
+            "put": {
+                "security": [
+                    {
+                        "ApiKeyAuth": []
+                    }
+                ],
+                "description": "Handles the request to update a note.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "Notes"
+                ],
+                "summary": "Update the note",
+                "parameters": [
+                    {
+                        "description": "Data for updating the note",
+                        "name": "body",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/entities.Note"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfully updated note",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": true
+                        }
+                    },
+                    "400": {
+                        "description": "Bad request",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response"
+                        }
+                    },
+                    "404": {
+                        "description": "Note not found",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/handler.Response"
+                        }
+                    }
+                }
+            },
             "post": {
                 "security": [
                     {
@@ -172,7 +228,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/note/delete/{noteID}": {
+        "/notes/{noteID}": {
             "delete": {
                 "security": [
                     {
@@ -228,7 +284,7 @@ const docTemplate = `{
                 }
             }
         },
-        "/note/list/{userID}": {
+        "/notes/{userID}": {
             "get": {
                 "security": [
                     {
@@ -285,69 +341,10 @@ const docTemplate = `{
                     }
                 }
             }
-        },
-        "/note/update": {
-            "put": {
-                "security": [
-                    {
-                        "ApiKeyAuth": []
-                    }
-                ],
-                "description": "Handles the request to update a note.",
-                "consumes": [
-                    "application/json"
-                ],
-                "produces": [
-                    "application/json"
-                ],
-                "tags": [
-                    "Notes"
-                ],
-                "summary": "Update the note",
-                "parameters": [
-                    {
-                        "description": "Data for updating the note",
-                        "name": "body",
-                        "in": "body",
-                        "required": true,
-                        "schema": {
-                            "$ref": "#/definitions/entities.Note"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Successfully updated note",
-                        "schema": {
-                            "type": "object",
-                            "additionalProperties": true
-                        }
-                    },
-                    "400": {
-                        "description": "Bad request",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "404": {
-                        "description": "Note not found",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    },
-                    "500": {
-                        "description": "Internal server error",
-                        "schema": {
-                            "$ref": "#/definitions/handler.Response"
-                        }
-                    }
-                }
-            }
         }
     },
     "definitions": {
         "entities.Note": {
-            "description": "Note structure",
             "type": "object",
             "required": [
                 "text",
@@ -356,7 +353,9 @@ const docTemplate = `{
             ],
             "properties": {
                 "date": {
-                    "type": "string"
+                    "description": "Use the format tag for RFC3339",
+                    "type": "string",
+                    "format": "date-time"
                 },
                 "done": {
                     "type": "boolean"

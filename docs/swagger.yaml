@@ -1,9 +1,10 @@
 basePath: /
 definitions:
   entities.Note:
-    description: Note structure
     properties:
       date:
+        description: Use the format tag for RFC3339
+        format: date-time
         type: string
       done:
         type: boolean
@@ -120,7 +121,7 @@ paths:
       summary: signUp User registration
       tags:
       - Auth
-  /note/create:
+  /notes:
     post:
       consumes:
       - application/json
@@ -153,7 +154,43 @@ paths:
       summary: Create a Note
       tags:
       - Notes
-  /note/delete/{noteID}:
+    put:
+      consumes:
+      - application/json
+      description: Handles the request to update a note.
+      parameters:
+      - description: Data for updating the note
+        in: body
+        name: body
+        required: true
+        schema:
+          $ref: '#/definitions/entities.Note'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successfully updated note
+          schema:
+            additionalProperties: true
+            type: object
+        "400":
+          description: Bad request
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "404":
+          description: Note not found
+          schema:
+            $ref: '#/definitions/handler.Response'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/handler.Response'
+      security:
+      - ApiKeyAuth: []
+      summary: Update the note
+      tags:
+      - Notes
+  /notes/{noteID}:
     delete:
       consumes:
       - application/json
@@ -189,7 +226,7 @@ paths:
       summary: Delete the note
       tags:
       - Notes
-  /note/list/{userID}:
+  /notes/{userID}:
     get:
       consumes:
       - application/json
@@ -224,43 +261,6 @@ paths:
       security:
       - ApiKeyAuth: []
       summary: List Show users notes
-      tags:
-      - Notes
-  /note/update:
-    put:
-      consumes:
-      - application/json
-      description: Handles the request to update a note.
-      parameters:
-      - description: Data for updating the note
-        in: body
-        name: body
-        required: true
-        schema:
-          $ref: '#/definitions/entities.Note'
-      produces:
-      - application/json
-      responses:
-        "200":
-          description: Successfully updated note
-          schema:
-            additionalProperties: true
-            type: object
-        "400":
-          description: Bad request
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "404":
-          description: Note not found
-          schema:
-            $ref: '#/definitions/handler.Response'
-        "500":
-          description: Internal server error
-          schema:
-            $ref: '#/definitions/handler.Response'
-      security:
-      - ApiKeyAuth: []
-      summary: Update the note
       tags:
       - Notes
 securityDefinitions:

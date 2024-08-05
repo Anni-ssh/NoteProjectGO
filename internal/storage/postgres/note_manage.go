@@ -39,7 +39,7 @@ func (n *NoteManagePostgres) CreateNote(ctx context.Context, userID int, title, 
 	}
 
 	// Подготовка SQL-запроса
-	stmt, err := tx.PrepareContext(ctx, "INSERT INTO notes (id, title, text) VALUES($1, $2, $3) RETURNING id")
+	stmt, err := tx.PrepareContext(ctx, "INSERT INTO notes (user_id, title, text) VALUES($1, $2, $3) RETURNING id")
 	if err != nil {
 		tx.Rollback()
 		return 0, fmt.Errorf("%s: Prepare failed: %w", op, err)
@@ -84,7 +84,7 @@ func (n *NoteManagePostgres) NotesList(ctx context.Context, userID int) ([]entit
 	}
 
 	// Подготовка SQL-запроса
-	q, err := tx.PrepareContext(ctx, "SELECT * FROM notes WHERE id = $1")
+	q, err := tx.PrepareContext(ctx, "SELECT * FROM notes WHERE user_id = $1")
 	if err != nil {
 		tx.Rollback()
 		return nil, fmt.Errorf("%s: Prepare failed: %w", op, err)

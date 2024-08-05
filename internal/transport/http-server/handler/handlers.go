@@ -52,8 +52,6 @@ func (h *Handler) InitRouter() *chi.Mux {
 		httpSwagger.URL("http://localhost:8080/swagger/doc.json"),
 	))
 
-	r.Get("/", h.home)
-
 	//Static files
 	fileServer(r, "/")
 
@@ -62,15 +60,15 @@ func (h *Handler) InitRouter() *chi.Mux {
 		r.Post("/sign-up", h.signUp)
 		r.Post("/sign-in", h.signIn)
 	})
+
 	// Работа с заметками
-	r.Route("/note", func(r chi.Router) {
+	r.Route("/notes", func(r chi.Router) {
 		r.Use(h.authMiddleware)
 
-		r.Get("/workspace", h.noteWorkspace)
-		r.Get("/list", h.notesList)
-		r.Post("/create", h.noteCreate)
-		r.Put("/update", h.noteUpdate)
-		r.Delete("/delete", h.noteDelete)
+		r.Get("/{userID}", h.notesList)     // Получение списка заметок по ID
+		r.Post("/", h.noteCreate)           // Создание новой заметки
+		r.Put("/", h.noteUpdate)            // Обновление заметки по ID
+		r.Delete("/{noteID}", h.noteDelete) // Удаление конкретной заметки по ID
 	})
 
 	return r
@@ -81,7 +79,6 @@ func fileServer(r chi.Router, path string) {
 	root := http.Dir(filepath.Join(workDir, webPath, staticPath))
 
 	if strings.ContainsAny(path, "{}*") {
-		//TODO
 		panic("FileServer does not permit any URL parameters")
 	}
 
